@@ -7,8 +7,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 		/**
 		 * The ID of this plugin.
 		 *
-		 * @since    1.0.0
-		 * @access   private
 		 * @var      string    $plugin_name    The ID of this plugin.
 		 */
 		private $plugin_name;
@@ -16,8 +14,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 		/**
 		 * The version of this plugin.
 		 *
-		 * @since    1.0.0
-		 * @access   private
 		 * @var      string    $version    The current version of this plugin.
 		 */
 		private $version;
@@ -25,7 +21,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 		/**
 		 * Initialize the class and set its properties.
 		 *
-		 * @since    1.0.0
 		 * @param      string    $plugin_name       The name of this plugin.
 		 * @param      string    $version    The version of this plugin.
 		 */
@@ -39,7 +34,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 		/**
 		 * Register the stylesheets for the admin area.
 		 *
-		 * @since    1.0.0
 		 */
 		public function enqueue_styles()
 		{
@@ -49,7 +43,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 		/**
 		 * Register the JavaScript for the admin area.
 		 *
-		 * @since    1.0.0
 		 */
 		public function enqueue_scripts()
 		{
@@ -62,7 +55,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 		 * @param mixed $order_id
 		 * @return void
 		 */
-		public function it_detect_order_save($order_id, $order)
+		public function it_handle_order_save($order_id, $order)
 		{
 			if (
 				isset($_REQUEST['_wpnonce'])
@@ -77,6 +70,28 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 				if ($order && $order->get_status() === 'completed') {
 					$this->it_woocommerce_aftership_order_paid($order_id);
 				}
+			}
+		}
+
+		
+		/**
+		 * Detects if the order has been import via WP All Import
+		 *
+		 * @param mixed $post_id
+		 * @return void
+		 */
+		public function it_handle_wp_all_import_order($post_id)
+		{
+			// Vérifier que le post est une commande WooCommerce
+			if (get_post_type($post_id) === 'shop_order') {
+				// teste si la commande a été mise à jour via all import	
+				error_log("La commande #{$post_id} a été mise à jour via WP All Import.");
+				$order = wc_get_order($post_id);
+				// Vérifier que la commande a bien le statut 'completed'
+				if ($order && $order->get_status() === 'completed') {
+					$this->it_woocommerce_aftership_order_paid($post_id);
+				}
+
 			}
 		}
 
