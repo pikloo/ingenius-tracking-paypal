@@ -1,5 +1,6 @@
 <?php
-
+defined('ABSPATH') || exit;
+if (!class_exists('Ingenius_Tracking_Paypal_Activator')) {
 class Ingenius_Tracking_Paypal_Activator
 {
 	/**
@@ -17,4 +18,5 @@ class Ingenius_Tracking_Paypal_Activator
 			wp_die(sprintf(__('<b>%s</b> requires WooCommerce Paypal Payments. Please install and activate WooCommerce Paypal Payments.', TEXT_DOMAIN), PLUGIN_NAME));
 		}
 	}
+}
 }
