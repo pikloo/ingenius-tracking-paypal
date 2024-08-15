@@ -21,7 +21,8 @@
  * @author     Your Name <email@example.com>
  */
 
-class Ingenius_Tracking_Paypal_Admin {
+class Ingenius_Tracking_Paypal_Admin
+{
 
 	/**
 	 * The ID of this plugin.
@@ -48,11 +49,11 @@ class Ingenius_Tracking_Paypal_Admin {
 	 * @param      string    $plugin_name       The name of this plugin.
 	 * @param      string    $version    The version of this plugin.
 	 */
-	public function __construct( $plugin_name, $version ) {
+	public function __construct($plugin_name, $version)
+	{
 
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
-
 	}
 
 	/**
@@ -60,22 +61,9 @@ class Ingenius_Tracking_Paypal_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public function enqueue_styles() {
-
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Ingenius_Tracking_Paypal_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Ingenius_Tracking_Paypal_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
-
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/ingenius-tracking-paypal-admin.css', array(), $this->version, 'all' );
-
+	public function enqueue_styles()
+	{
+		wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'css/ingenius-tracking-paypal-admin.css', array(), $this->version, 'all');
 	}
 
 	/**
@@ -83,22 +71,48 @@ class Ingenius_Tracking_Paypal_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public function enqueue_scripts() {
-
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Ingenius_Tracking_Paypal_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Ingenius_Tracking_Paypal_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
-
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/ingenius-tracking-paypal-admin.js', array( 'jquery' ), $this->version, false );
-
+	public function enqueue_scripts()
+	{
+		wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/ingenius-tracking-paypal-admin.js', array('jquery'), $this->version, false);
 	}
 
+
+	public function it_detect_order_status_completed($order_id)
+	{
+		// Vérifier que l'ID de la commande est valide
+		if (!$order_id) {
+			return;
+		}
+		$order = wc_get_order($order_id);
+		// Vérifier que la commande a bien le statut 'completed'
+		if ($order && $order->get_status() === 'completed') {
+			$this->it_woocommerce_aftership_order_paid($order_id);
+		}
+	}
+
+	/**
+	 * Send to WooCommerce PayPal Payment the information of an order managed by Aftership and paid by Paypal
+	 *
+	 * @param mixed $order_id
+	 * @return void
+	 */
+	private function it_woocommerce_aftership_order_paid($order_id)
+	{
+		require_once plugin_dir_path(__FILE__) . 'class-ingenius-tracking-paypal-aftership-order.php';
+		Ingenius_Tracking_Paypal_Aftership_Order::check_dependencies();
+
+		$aftership_order = new Ingenius_Tracking_Paypal_Aftership_Order($order_id);
+
+		$aftership_order->it_get_payment_method();
+		// Vérifier si le mode de paiement est PayPal
+		if ($aftership_order->it_get_payment_method() === 'paypal') {
+			//Récupérer les données de tracking de la commande
+			$aftership_order->it_register_order_datas();
+
+			$tracking_number =  $aftership_order->get_tracking_number();
+			$carrier_name =  $aftership_order->get_carrier_name();
+
+			//TODO: Envoyer à Woocommerce paypal payment
+		}
+	}
 }

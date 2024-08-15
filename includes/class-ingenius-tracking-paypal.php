@@ -1,33 +1,4 @@
 <?php
-
-/**
- * The file that defines the core plugin class
- *
- * A class definition that includes attributes and functions used across both the
- * public-facing side of the site and the admin area.
- *
- * @link       http://example.com
- * @since      1.0.0
- *
- * @package    Ingenius_Tracking_Paypal
- * @subpackage Ingenius_Tracking_Paypal/includes
- */
-
-/**
- * The core plugin class.
- *
- * This is used to define internationalization, admin-specific hooks, and
- * public-facing site hooks.
- *
- * Also maintains the unique identifier of this plugin as well as the current
- * version of the plugin.
- *
- * @since      1.0.0
- * @package    Ingenius_Tracking_Paypal
- * @subpackage Ingenius_Tracking_Paypal/includes
- * @author     Your Name <email@example.com>
- */
-
 class Ingenius_Tracking_Paypal {
 
 	/**
@@ -121,7 +92,8 @@ class Ingenius_Tracking_Paypal {
 		 * The class responsible for defining all actions that occur in the public-facing
 		 * side of the site.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-ingenius-tracking-paypal-public.php';
+		//TODO: Delete if it no needed
+		// require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-ingenius-tracking-paypal-public.php';
 
 		$this->loader = new Ingenius_Tracking_Paypal_Loader();
 
@@ -157,7 +129,7 @@ class Ingenius_Tracking_Paypal {
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
-
+		$this->loader->add_action( 'woocommerce_order_status_completed', $plugin_admin, 'it_detect_order_status_completed' );
 	}
 
 	// /**
