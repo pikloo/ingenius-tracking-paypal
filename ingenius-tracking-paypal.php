@@ -1,28 +1,23 @@
 <?php
 
 /**
- * The plugin bootstrap file
- *
- * This file is read by WordPress to generate the plugin information in the plugin
- * admin area. This file also includes all of the dependencies used by the plugin,
- * registers the activation and deactivation functions, and defines a function
- * that starts the plugin.
  *
  * @link              http://example.com
  * @since             1.0.0
  * @package           Ingenius_Tracking_Paypal
  *
  * @wordpress-plugin
- * Plugin Name:       WordPress Plugin Boilerplate
+ * Plugin Name:       Ingenius Tracking Paypal
  * Plugin URI:        http://example.com/ingenius-tracking-paypal-uri/
- * Description:       This is a short description of what the plugin does. It's displayed in the WordPress admin area.
+ * Description:       This plugin retrieves tracking numbers and carrier data when an order is paid by paypal and then sends this information to WooCommerce Paypal Payment.
  * Version:           1.0.0
- * Author:            Your Name or Your Company
- * Author URI:        http://example.com/
+ * Author:            Ingenius
+ * Author URI:        https://ingenius.agency/
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       ingenius-tracking-paypal
  * Domain Path:       /languages
+ * Requires Plugins: woocommerce, woocommerce-paypal-payments
  */
 
 // If this file is called directly, abort.
@@ -37,11 +32,14 @@ if ( ! defined( 'WPINC' ) ) {
  */
 define( 'INGENIUS_TRACKING_PAYPAL_VERSION', '1.0.0' );
 
+define( 'TEXT_DOMAIN', 'ingenius-tracking-paypal');
+define( 'PLUGIN_NAME', 'Ingenius Tracking Paypal');
+
 /**
  * The code that runs during plugin activation.
  * This action is documented in includes/class-ingenius-tracking-paypal-activator.php
  */
-function activate_ingenius_tracking_paypal() {
+function it_activate() {
 	require_once plugin_dir_path( __FILE__ ) . 'includes/class-ingenius-tracking-paypal-activator.php';
 	Ingenius_Tracking_Paypal_Activator::activate();
 }
@@ -50,13 +48,24 @@ function activate_ingenius_tracking_paypal() {
  * The code that runs during plugin deactivation.
  * This action is documented in includes/class-ingenius-tracking-paypal-deactivator.php
  */
-function deactivate_ingenius_tracking_paypal() {
+function it_deactivate() {
 	require_once plugin_dir_path( __FILE__ ) . 'includes/class-ingenius-tracking-paypal-deactivator.php';
 	Ingenius_Tracking_Paypal_Deactivator::deactivate();
 }
 
-register_activation_hook( __FILE__, 'activate_ingenius_tracking_paypal' );
-register_deactivation_hook( __FILE__, 'deactivate_ingenius_tracking_paypal' );
+register_activation_hook( __FILE__, 'it_activate' );
+register_deactivation_hook( __FILE__, 'it_deactivate' );
+
+/**
+ * The code check dependencies.
+ * This action is documented in includes/class-ingenius-tracking-paypal-check-dependencies.php
+ */
+function it_check_dependencies() {
+	require_once plugin_dir_path( __FILE__ ) . 'includes/class-ingenius-tracking-paypal-check-dependencies.php';
+	Ingenius_Tracking_Paypal_Check_Dependencies::check_dependencies();
+}
+
+add_action('admin_notices', 'it_check_dependencies');
 
 /**
  * The core plugin class that is used to define internationalization,
@@ -67,16 +76,11 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-ingenius-tracking-paypal.p
 /**
  * Begins execution of the plugin.
  *
- * Since everything within the plugin is registered via hooks,
- * then kicking off the plugin from this point in the file does
- * not affect the page life cycle.
- *
- * @since    1.0.0
  */
-function run_ingenius_tracking_paypal() {
+function it_run() {
 
 	$plugin = new Ingenius_Tracking_Paypal();
 	$plugin->run();
 
 }
-run_ingenius_tracking_paypal();
+it_run();

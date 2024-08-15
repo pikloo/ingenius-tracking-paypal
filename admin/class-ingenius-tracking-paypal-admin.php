@@ -20,6 +20,7 @@
  * @subpackage Ingenius_Tracking_Paypal/admin
  * @author     Your Name <email@example.com>
  */
+
 class Ingenius_Tracking_Paypal_Admin {
 
 	/**
