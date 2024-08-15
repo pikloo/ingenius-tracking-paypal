@@ -129,7 +129,9 @@ class Ingenius_Tracking_Paypal {
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
-		$this->loader->add_action( 'woocommerce_order_status_completed', $plugin_admin, 'it_detect_order_status_completed' );
+		// $this->loader->add_action( 'woocommerce_new_order', $plugin_admin, 'it_detect_order_save', 10, 3 );
+		//! Empêcher que la fonction soit exécuter plusieurs fois
+		$this->loader->add_action( 'woocommerce_update_order', $plugin_admin, 'it_detect_order_save', 10, 2 );
 	}
 
 	// /**

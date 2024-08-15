@@ -76,22 +76,32 @@ class Ingenius_Tracking_Paypal_Admin
 		wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/ingenius-tracking-paypal-admin.js', array('jquery'), $this->version, false);
 	}
 
-
-	public function it_detect_order_status_completed($order_id)
+	/**
+	 * Detects if the order has been manually saved
+	 *
+	 * @param mixed $order_id
+	 * @return void
+	 */
+	public function it_detect_order_save($order_id, $order)
 	{
-		// Vérifier que l'ID de la commande est valide
-		if (!$order_id) {
-			return;
-		}
-		$order = wc_get_order($order_id);
-		// Vérifier que la commande a bien le statut 'completed'
-		if ($order && $order->get_status() === 'completed') {
-			$this->it_woocommerce_aftership_order_paid($order_id);
+		if (
+			isset($_REQUEST['_wpnonce'])
+			&& wp_verify_nonce($_REQUEST['_wpnonce'], "update-order_{$order_id}")
+		) {
+
+			//Teste si le hook de modification de commande ont été déclenché lors de l'import
+			error_log("Une modification est déclenché pour la commande #{$order_id}"); // A supprimer
+
+			$order = wc_get_order($order_id);
+			// Vérifier que la commande a bien le statut 'completed'
+			if ($order && $order->get_status() === 'completed') {
+				$this->it_woocommerce_aftership_order_paid($order_id);
+			}
 		}
 	}
 
 	/**
-	 * Send to WooCommerce PayPal Payment the information of an order managed by Aftership and paid by Paypal
+	 * Retrieve the information of an order managed by Aftership and paid by Paypal
 	 *
 	 * @param mixed $order_id
 	 * @return void
@@ -102,17 +112,42 @@ class Ingenius_Tracking_Paypal_Admin
 		Ingenius_Tracking_Paypal_Aftership_Order::check_dependencies();
 
 		$aftership_order = new Ingenius_Tracking_Paypal_Aftership_Order($order_id);
-
 		$aftership_order->it_get_payment_method();
-		// Vérifier si le mode de paiement est PayPal
-		if ($aftership_order->it_get_payment_method() === 'paypal') {
+		// Vérifier si le mode de paiement est PayPal et que la transaction n'est pas encore envoyer à paypal
+		$is_already_sent_to_paypal = $aftership_order->it_is_send_to_paypal();
+
+		if ($aftership_order->it_get_payment_method() === 'ppcp-gateway' && !$is_already_sent_to_paypal) {
 			//Récupérer les données de tracking de la commande
-			$aftership_order->it_register_order_datas();
+			$order = wc_get_order($order_id);
+			$aftership_order->it_register_order_datas($order);
 
 			$tracking_number =  $aftership_order->get_tracking_number();
 			$carrier_name =  $aftership_order->get_carrier_name();
 
-			//TODO: Envoyer à Woocommerce paypal payment
+			// Envoyer à Woocommerce paypal payment
+			$this->it_send_tracking_to_paypal($aftership_order, $order_id, $tracking_number, $carrier_name);
 		}
+	}
+
+	/**
+	 * Send tracking datas to paypal
+	 *
+	 * @param mixed $order_id
+	 * @param Ingenius_Tracking_Paypal_Aftership_Order $order
+	 * @param string $tracking_number
+	 * @param string $carrier_name
+	 * @return void
+	 */
+	private function it_send_tracking_to_paypal(Ingenius_Tracking_Paypal_Aftership_Order $order, $order_id, $tracking_number, $carrier_name)
+	{
+		// Vérifier que l'ID de la commande est valide
+		if (!$order_id || !$tracking_number || !$carrier_name) {
+			return;
+		}
+		// Déclencher l'envoi des informations à PayPal
+		do_action('woocommerce_paypal_add_tracking_information', $order_id, $tracking_number, $carrier_name);
+
+		// Ajouter la métadonnée "it_tracking_send_to_paypal" à true
+		$order->it_set_tracking_send_to_paypal_status();
 	}
 }
