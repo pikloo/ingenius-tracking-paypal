@@ -49,13 +49,32 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 			wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/ingenius-tracking-paypal-admin.js', array('jquery'), $this->version, false);
 		}
 
+
+		/**
+		 * Avoid multiples call to hook "it_handle _order_save"
+		 *
+		 * @param mixed $order_id
+		 * @return void
+		 */
+		public function it_maybe_order_update( $order_id ) {
+	
+			as_schedule_single_action( 
+				time() + 5, // when to run? 5 seconds later
+				'it_handle_order_save', // the hook name
+				array( $order_id ), // arguments to pass to the hook and the function
+				'', // group name, could be any string
+				true // should be unique? – yes
+			);
+		
+		}
+
 		/**
 		 * Detects if the order has been manually saved
 		 *
 		 * @param mixed $order_id
 		 * @return void
 		 */
-		public function it_handle_order_save($order_id, $order)
+		public function it_handle_order_save($order_id)
 		{
 			if (
 				isset($_REQUEST['_wpnonce'])
@@ -87,7 +106,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 				// teste si la commande a été mise à jour via all import	
 				error_log("La commande #{$post_id} a été mise à jour via WP All Import.");
 				$order = wc_get_order($post_id);
-				// Vérifier que la commande a bien le statut 'completed'
+				// Vérifier que la commande a bien le statut 'completed' ou 'finiish'
 				if ($order && $order->get_status() === 'completed') {
 					$this->it_woocommerce_aftership_order_paid($post_id);
 				}
@@ -108,10 +127,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 
 			$aftership_order = new Ingenius_Tracking_Paypal_Aftership_Order($order_id);
 			$aftership_order->it_get_payment_method();
-			// Vérifier si le mode de paiement est PayPal et que la transaction n'est pas encore envoyer à paypal
-			$is_already_sent_to_paypal = $aftership_order->it_is_send_to_paypal();
-
-			if ($aftership_order->it_get_payment_method() === 'ppcp-gateway' && !$is_already_sent_to_paypal) {
+			if ($aftership_order->it_get_payment_method() === 'ppcp-gateway') {
 				//Récupérer les données de tracking de la commande
 				$order = wc_get_order($order_id);
 				$aftership_order->it_register_order_datas($order);
