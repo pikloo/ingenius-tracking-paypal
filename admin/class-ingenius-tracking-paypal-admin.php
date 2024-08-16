@@ -51,21 +51,21 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 
 
 		/**
-		 * Avoid multiples call to hook "it_handle _order_save"
+		 * Avoid multiples call to hook "it_handle_order_save"
 		 *
 		 * @param mixed $order_id
 		 * @return void
 		 */
-		public function it_maybe_order_update( $order_id ) {
-	
-			as_schedule_single_action( 
+		public function it_maybe_order_update($order_id)
+		{
+
+			as_schedule_single_action(
 				time() + 5, // when to run? 5 seconds later
 				'it_handle_order_save', // the hook name
-				array( $order_id ), // arguments to pass to the hook and the function
+				array($order_id), // arguments to pass to the hook and the function
 				'', // group name, could be any string
 				true // should be unique? – yes
 			);
-		
 		}
 
 		/**
@@ -84,15 +84,11 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 				//Teste si le hook de modification de commande ont été déclenché lors de l'import
 				error_log("Une modification est déclenché pour la commande #{$order_id}"); // A supprimer
 
-				$order = wc_get_order($order_id);
-				// Vérifier que la commande a bien le statut 'completed'
-				if ($order && $order->get_status() === 'completed') {
-					$this->it_woocommerce_aftership_order_paid($order_id);
-				}
+				$this->it_woocommerce_aftership_order_paid($order_id);
 			}
 		}
 
-		
+
 		/**
 		 * Detects if the order has been import via WP All Import
 		 *
@@ -105,12 +101,8 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 			if (get_post_type($post_id) === 'shop_order') {
 				// teste si la commande a été mise à jour via all import	
 				error_log("La commande #{$post_id} a été mise à jour via WP All Import.");
-				$order = wc_get_order($post_id);
-				// Vérifier que la commande a bien le statut 'completed' ou 'finiish'
-				if ($order && $order->get_status() === 'completed') {
-					$this->it_woocommerce_aftership_order_paid($post_id);
-				}
 
+				$this->it_woocommerce_aftership_order_paid($post_id);
 			}
 		}
 
