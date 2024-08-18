@@ -29,7 +29,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Check_Dependencies')) {
                 echo '<div class="error"><p>' . sprintf(__('<b>%s</b> requires Aftership. Please enable it to continue.', TEXT_DOMAIN), PLUGIN_NAME) . '</p></div>';
             }
 
-            if ($is_woocommerce_disabled || $is_woocommerce_paypal_payment_disabled || $$is_aftership_disabled ) {
+            if ($is_woocommerce_disabled || $is_woocommerce_paypal_payment_disabled || $is_aftership_disabled) {
                 deactivate_plugins(plugin_basename(__FILE__));
                 if (isset($_GET['activate'])) {
                     unset($_GET['activate']);
