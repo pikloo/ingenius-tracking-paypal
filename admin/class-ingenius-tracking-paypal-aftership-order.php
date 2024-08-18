@@ -7,7 +7,6 @@ use WooCommerce\PayPalCommerce\ApiClient\Exception\RuntimeException;
 use WooCommerce\PayPalCommerce\Button\Endpoint\RequestData;
 use WooCommerce\PayPalCommerce\OrderTracking\Endpoint\OrderTrackingEndpoint;
 use WooCommerce\PayPalCommerce\OrderTracking\Shipment\ShipmentFactory;
-use WooCommerce\PayPalCommerce\WcGateway\Processor\TransactionIdHandlingTrait;
 use WooCommerce\WooCommerce\Logging\Logger\NullLogger;
 use WP_Error;
 
@@ -15,14 +14,13 @@ defined('ABSPATH') || exit;
 if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
     class Ingenius_Tracking_Paypal_Aftership_Order
     {
-
-        use TransactionIdHandlingTrait;
-
         private $order_id;
 
-        protected string $tracking_number;
+        private string $tracking_number;
 
-        protected string $carrier_name;
+        private string $carrier_name;
+
+        private string $payment_method;
 
         private array $items;
 
@@ -33,32 +31,34 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
             'cancelled' => 'CANCELLED'
         ];
 
+
+        protected const CARRIERS_NAME = [
+            '4px' => 'FOUR_PX_EXPRESS',
+            'bpost' => 'BE_BPOST',
+            'china-ems' => 'CN_CHINA_POST_EMS',
+            'china-post' => 'CN_CHINA_POST_EMS',
+            'colis-prive' => 'COLIS_PRIVE',
+            'dhl-global-mail-asia' => 'DHL_GLOBAL_MAIL_ASIA',
+            'dhl-reference' => 'DHL_REFERENCE_API',
+            'dpd' => 'DPD',
+            'exapaq' => 'FR_EXAPAQ',
+            'gls' => 'GLS',
+            'la-poste-colissimo' => 'FR_COLIS',
+            'postnl-international' => 'POSTNL_INTERNATIONAL',
+            'singapore-post' => 'SG_SG_POST',
+            'swiss-post' => 'SWISS_POST',
+            'tnt-fr' => 'TNT_FR',
+            'yanwen' => 'YANWEN',
+            'yunexpress' => 'YUNEXPRESS'
+        ];
+
         public function __construct($order_id)
         {
             $this->order_id = $order_id;
-        }
-
-        /**
-         * Retrieve the order's payment method
-         *
-         * @return string
-         */
-        public function it_get_payment_method(): string
-        {
-            $order = wc_get_order($this->order_id);
-            return $order->get_payment_method();
-        }
-
-        /**
-         * Get order's data from the assiocates order meta datas
-         * Provides the instantiate object with the tracking number and carrier name
-         * @param WC_Order $order
-         * @return void
-         */
-        public function it_register_order_datas(WC_Order $order)
-        {
+            $order = wc_get_order($order_id);
             $this->tracking_number = $order->get_meta('_aftership_tracking_number') ?? '';
             $this->carrier_name = $order->get_meta('_aftership_tracking_provider_name') ??  '';
+            $this->payment_method = $order->get_payment_method();
             foreach ($order->get_items() as $item_id => $item) {
                 $this->items[] = [
                     'item_id' => $item_id,
@@ -67,6 +67,15 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                     // Ajoutez d'autres détails pertinents des items si nécessaire
                 ];
             }
+        }
+
+        public function it_get_order_datas(){
+            return [
+                'tracking_number' => $this->tracking_number,
+                'carrier_name' => $this->carrier_name,
+                'payment_method' => $this->payment_method,
+                'items' => $this->items
+            ];
         }
 
 
@@ -81,10 +90,10 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
 
             //TODO: Récupérer les API credentials créé dans Paypal
             // Récupérer les identifiants Paypal
-            $client_id = 'AWAoPKd2jCxCIVLsDgC-TNU1jd0H9XG2ELkmqmLdmrj4Oo7FnHXWuPtoo4-R7ra4t5oc1itAG-G6w0_w';
-            $client_secret = 'EFMWwGwyjZZ2fNJs7ov7HPUavhEoImt2pZJEnJlxx7hEv2YUvxi3tVcX4nYZ7y32rMVqkHnrbPUKssq9';
+            $client_id = 'AU7ebfDwPJ2uP_yShWzwQ1fMrTPZ_OvJ9ivd4OJZx2JyERardyWCLquQ2d6fc7uj1q3YIWhmoY4N9hud';
+            $client_secret = 'EGjyyRS3AK06h9gUnuH2z9Gt1-PJ7CSEc3Akfar75cXCb7uUa5gSJl-Ye6RPNXgZzAe4lkzpLWTFn7y1';
 
-            // require_once plugin_dir_path(__FILE__) . 'class-ingenius-tracking-paypal-api-connection.php';
+            require_once plugin_dir_path(__FILE__) . 'class-ingenius-tracking-paypal-api-connection.php';
             // Instanciation de la connexion PayPal
             $paypal_connection = new PayPalConnection($client_id, $client_secret);
 
@@ -104,15 +113,20 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                     'created' => time()  // Temps de création du token
                 ];
 
-                // require_once plugin_dir_path(__FILE__) . 'class-ingenius-tracking-paypal-bearer.php';
+                require_once plugin_dir_path(__FILE__) . 'class-ingenius-tracking-paypal-bearer.php';
 
                 $bearer = new BearerToken($token_json);
 
                 $shipment_factory = new ShipmentFactory(); // Exemple, cela peut nécessiter plus de configuration
                 $allowed_statuses = ['SHIPPED', 'ON_HOLD', 'DELIVERED', 'CANCELLED'];
                 $should_use_new_api = true;
-                //TODO: détecter si sandbox ou live
-                $host = 'https://api.sandbox.paypal.com'; // URL de l'API PayPal
+
+                // $host = $paypal_connection->it_is_paypal_sandbox_mode() 
+                // ? 'https://api.sandbox.paypal.com' 
+                // : 'https://api.paypal.com';
+
+                $host =  'https://api.sandbox.paypal.com'; //TEST
+
 
                 $order_tracking_endpoint = new OrderTrackingEndpoint(
                     $host,
@@ -128,8 +142,8 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                 // Préparer les données à envoyer à l'API PayPal
                 $tracking_data = [
                     'tracking_number' => $this->tracking_number,
-                    'carrier'         => 'DPD', //$this->carrier_name,
-                    'carrier_name_other' => '',
+                    'carrier'         => isset(self::CARRIERS_NAME[$this->carrier_name]) ? self::CARRIERS_NAME[$this->carrier_name] : 'OTHER',
+                    'carrier_name_other' => isset(self::CARRIERS_NAME[$this->carrier_name]) ? '' : $this->carrier_name,
                     'capture_id' => $order->get_transaction_id(),
                     'status' => self::ORDER_STATUS[$order->get_status()],
                     'items' => $this->items,
@@ -146,14 +160,17 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                     $tracking_data['items']
                 );
 
-                error_log("Commande #{$this->order_id} capture_id #{$tracking_data['capture_id']}  status #{$tracking_data['status']}");
+                error_log("Commande #{$this->order_id} capture_id #{$tracking_data['capture_id']}  status #{$tracking_data['status']} carrier #{$tracking_data['carrier']} other #{$tracking_data['carrier_name_other']}");
 
                 // Appel à add_tracking_information ou update_tracking_information
                 try {
-
-                    // $data = $order_tracking_endpoint->get_tracking_information($this->order_id, $this->tracking_number);
-                    $order_tracking_endpoint->add_tracking_information($shipment, $this->order_id);
-                    error_log('Tracking information added successfully!');
+                    // Si tracking data chez Paypal update sinon add
+                    if ($order->get_meta( '_ppcp_paypal_order_id' )){
+                        $order_tracking_endpoint->update_tracking_information($shipment, $this->order_id);
+                    }else {
+                        $order_tracking_endpoint->add_tracking_information($shipment, $this->order_id);
+                    }
+                    error_log('Tracking information updated successfully!');
                     echo 'Tracking information added successfully!';
                 } catch (RuntimeException $e) {
                     error_log($e->getMessage());

@@ -130,8 +130,6 @@ if (!class_exists('Ingenius_Tracking_Paypal')) {
 
 			$this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_styles');
 			$this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
-			// $this->loader->add_action( 'woocommerce_new_order', $plugin_admin, 'it_handle_order_save', 10, 3 );
-			//! Empêcher que la fonction soit exécuter plusieurs fois
 			$this->loader->add_action('woocommerce_update_order', $plugin_admin, 'it_handle_order_save', 10, 2);
 			$this->loader->add_action('pmxi_saved_post', $plugin_admin, 'it_handle_wp_all_import_order', 10, 3);
 		}

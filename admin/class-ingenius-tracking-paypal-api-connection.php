@@ -18,12 +18,14 @@ class PayPalConnection
      * @param string $client_secret Le Secret de l'application PayPal.
      * @param string $api_url       L'URL de l'API PayPal (sandbox ou live).
      */
-    public function __construct(string $client_id, string $client_secret, string $api_url = 'https://api.sandbox.paypal.com')
+    public function __construct(string $client_id, string $client_secret)
     {
         $this->client_id = $client_id;
         $this->client_secret = $client_secret;
-        //TODO: détecter si sandbox ou live activé dans l'admin
-        $this->api_url = $api_url;
+        $this->api_url = 'https://api.sandbox.paypal.com'; //TEST
+        // $this->api_url = $this->it_is_paypal_sandbox_mode() 
+        // ? 'https://api.sandbox.paypal.com' 
+        // : 'https://api.paypal.com';
     }
 
     /**
@@ -63,6 +65,19 @@ class PayPalConnection
         }
 
         return $response;
+    }
+
+
+    public function it_is_paypal_sandbox_mode() {
+        // Récupère les paramètres de PayPal dans WooCommerce
+        $paypal_settings = get_option('woocommerce_paypal_settings');
+    
+        // Vérifie si le mode sandbox est activé
+        if (isset($paypal_settings['testmode']) && $paypal_settings['testmode'] === 'yes') {
+            return true; // Mode sandbox activé
+        }
+    
+        return false; // Mode live activé
     }
 
     // public function it_get_paypal_order_informations($access_token, $order_id)

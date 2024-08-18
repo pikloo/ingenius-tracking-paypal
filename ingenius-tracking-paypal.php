@@ -21,6 +21,8 @@
  * Requires Plugins: woocommerce, woocommerce-paypal-payments, aftership-woocommerce-tracking
  */
 
+namespace IngeniusTrackingPaypal;
+
 use IngeniusTrackingPaypal\Includes\Ingenius_Tracking_Paypal;
 use IngeniusTrackingPaypal\Includes\Ingenius_Tracking_Paypal_Activator;
 use IngeniusTrackingPaypal\Includes\Ingenius_Tracking_Paypal_Check_Dependencies;
@@ -45,6 +47,13 @@ define( 'INGENIUS_TRACKING_PAYPAL_VERSION', '1.0.0' );
 
 define( 'TEXT_DOMAIN', 'ingenius-tracking-paypal');
 define( 'PLUGIN_NAME', 'Ingenius Tracking Paypal');
+define( __NAMESPACE__ . '\NS', __NAMESPACE__ . '\\' );
+
+/**
+ * Autoload Classes
+ */
+
+ require_once( plugin_dir_path( __FILE__ ) .'autoloader.php' );
 
 /**
  * The code that runs during plugin activation.
