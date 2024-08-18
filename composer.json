@@ -1,0 +1,9 @@
+{
+    "name": "ingenius/ingenius-tracking-paypal",
+    "autoload": {
+        "psr-4": {
+            "IngeniusTrackingPaypal\\Includes\\": "includes/",
+            "IngeniusTrackingPaypal\\Admin\\": "admin/"
+        }
+    }
+}

@@ -68,7 +68,8 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
             }
         }
 
-        public function it_get_order_datas(){
+        public function it_get_order_datas()
+        {
             return [
                 'tracking_number' => $this->tracking_number,
                 'carrier_name' => $this->carrier_name,
@@ -144,16 +145,19 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                     'carrier'         => isset(self::CARRIERS_NAME[$this->carrier_name]) ? self::CARRIERS_NAME[$this->carrier_name] : 'OTHER',
                     'carrier_name_other' => isset(self::CARRIERS_NAME[$this->carrier_name]) ? '' : $this->carrier_name,
                     'capture_id' => $order->get_transaction_id(),
-                    'status' => self::ORDER_STATUS[$order->get_status()],
                     'items' => $this->items,
                 ];
+
+                if (isset(self::ORDER_STATUS[$order->get_status()])) {
+                    $tracking_data['status'] = self::ORDER_STATUS[$order->get_status()];
+                }
 
                 // Création d'une instance de Shipment
                 $shipment = $shipment_factory->create_shipment(
                     $this->order_id,
                     $tracking_data['capture_id'],
                     $tracking_data['tracking_number'],
-                    $tracking_data['status'],
+                    isset($tracking_data['status']) ?? '',
                     $tracking_data['carrier'],
                     $tracking_data['carrier_name_other'],
                     $tracking_data['items']
@@ -164,9 +168,9 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                 // Appel à add_tracking_information ou update_tracking_information
                 try {
                     // Si tracking data chez Paypal update sinon add
-                    if ($order->get_meta( '_ppcp_paypal_order_id' )){
+                    if ($order->get_meta('_ppcp_paypal_order_id')) {
                         $order_tracking_endpoint->update_tracking_information($shipment, $this->order_id);
-                    }else {
+                    } else {
                         $order_tracking_endpoint->add_tracking_information($shipment, $this->order_id);
                     }
                     error_log('Tracking information updated successfully!');
