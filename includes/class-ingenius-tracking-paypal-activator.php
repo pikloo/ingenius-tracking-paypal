@@ -1,4 +1,7 @@
 <?php
+
+namespace IngeniusTrackingPaypal\Includes;
+
 defined('ABSPATH') || exit;
 if (!class_exists('Ingenius_Tracking_Paypal_Activator')) {
 class Ingenius_Tracking_Paypal_Activator

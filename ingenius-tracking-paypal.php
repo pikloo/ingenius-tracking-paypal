@@ -1,5 +1,6 @@
 <?php
 
+
 /**
  *
  * @link              http://example.com
@@ -19,6 +20,16 @@
  * Domain Path:       /languages
  * Requires Plugins: woocommerce, woocommerce-paypal-payments
  */
+
+use IngeniusTrackingPaypal\Includes\Ingenius_Tracking_Paypal;
+use IngeniusTrackingPaypal\Includes\Ingenius_Tracking_Paypal_Activator;
+use IngeniusTrackingPaypal\Includes\Ingenius_Tracking_Paypal_Check_Dependencies;
+use IngeniusTrackingPaypal\Includes\Ingenius_Tracking_Paypal_Deactivator;
+
+// Charger l'autoloader de Composer
+if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+    require_once __DIR__ . '/vendor/autoload.php';
+}
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
