@@ -38,10 +38,8 @@ if ( ! defined( 'WPINC' ) ) {
  * Rename this for your plugin and update it as you release new versions.
  */
 define( 'INGENIUS_TRACKING_PAYPAL_VERSION', '1.0.0' );
-
 define( 'TEXT_DOMAIN', 'ingenius-tracking-paypal');
 define( 'PLUGIN_NAME', 'Ingenius Tracking Paypal');
-define( __NAMESPACE__ . '\NS', __NAMESPACE__ . '\\' );
 
 /**
  * Autoload Classes

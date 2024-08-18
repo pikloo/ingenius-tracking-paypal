@@ -2,7 +2,6 @@
 
 namespace IngeniusTrackingPaypal\Admin;
 
-use WooCommerce\PayPalCommerce\ApiClient\Entity\Token;
 use RuntimeException;
 
 class PayPalConnection

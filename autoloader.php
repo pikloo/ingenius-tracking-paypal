@@ -1,57 +1,37 @@
 <?php
 
-spl_autoload_register( function( $class_name ) {
+/**
+ * Autoloader function for Ingenius Tracking Paypal Plugin.
+ *
+ * @param string $class_name The fully-qualified class name.
+ */
+function it_autoload($class_name) {
 
-	// If the specified $class_name does not include our namespace, duck out.
-	if ( false === strpos( $class_name, 'IngeniusTrackingPaypal' ) ) {
-		return;
-	}
+    // Base directory for the namespace prefix
+    $base_dir = __DIR__ . '/';
 
-	// Split the class name into an array to read the namespace and class.
-	$file_parts = explode( '\\', $class_name );
+    // Namespace prefix for this plugin
+    $prefix = 'IngeniusTrackingPaypal\\';
 
-	// Do a reverse loop through $file_parts to build the path to the file.
-	$namespace = '';
-	for ( $i = count( $file_parts ) - 1; $i > 0; $i-- ) {
+    // Does the class use the namespace prefix?
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class_name, $len) !== 0) {
+        // No, move to the next registered autoloader
+        return;
+    }
 
-		// Read the current component of the file part.
-		$current = strtolower( $file_parts[ $i ] );
-		$current = str_ireplace( '_', '-', $current );
+    // Get the relative class name
+    $relative_class = substr($class_name, $len);
 
-		// If we're at the first entry, then we're at the filename.
-		if ( count( $file_parts ) - 1 === $i ) {
-			/**
-			 * If 'interface' is contained in the parts of the file name, then
-			 * define the $file_name differently so that it's properly loaded.
-			 * Otherwise, just set the $file_name equal to that of the class
-			 * filename structure.
-			 */
-			if ( strpos( strtolower( $file_parts[ count( $file_parts ) - 1 ] ), 'interface' ) ) {
+    // Replace the namespace prefix with the base directory, replace namespace
+    // separators with directory separators in the relative class name, append
+    // with .php
+    $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
 
-				// Grab the name of the interface from its qualified name.
-				$interface_name = explode( '_', $file_parts[ count( $file_parts ) - 1 ] );
-				$interface_name = $interface_name[0];
+    // If the file exists, require it
+    if (file_exists($file)) {
+        require $file;
+    }
+}
 
-				$file_name = "interface-$interface_name.php";
-
-			} else {
-				$file_name = "class-$current.php";
-			}
-		} else {
-			$namespace = '/' . $current . $namespace;
-		}
-	}
-
-	// Now build a path to the file using mapping to the file location.
-	$filepath  = trailingslashit( untrailingslashit( plugin_dir_path( dirname( __DIR__ ) ) ) . $namespace );
-	$filepath .= $file_name;
-
-	// If the file exists in the specified path, then include it.
-	if ( file_exists( $filepath ) ) {
-		include_once( $filepath );
-	} else {
-		wp_die(
-			esc_html( 'The file attempting to be loaded at ' . $filepath . ' does not exist.' )
-		);
-	}
-} );
+spl_autoload_register('it_autoload');

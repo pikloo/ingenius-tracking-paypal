@@ -2,7 +2,6 @@
 
 namespace IngeniusTrackingPaypal\Admin;
 
-use WC_Order;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\RuntimeException;
 use WooCommerce\PayPalCommerce\Button\Endpoint\RequestData;
 use WooCommerce\PayPalCommerce\OrderTracking\Endpoint\OrderTrackingEndpoint;
@@ -22,7 +21,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
 
         private string $payment_method;
 
-        private array $items;
+        private array $items = [];
 
         protected const ORDER_STATUS = [
             'shipped' => 'SHIPPED',
