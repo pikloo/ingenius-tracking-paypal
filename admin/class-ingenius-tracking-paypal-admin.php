@@ -114,7 +114,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 		{
 			require_once plugin_dir_path(__FILE__) . 'class-ingenius-tracking-paypal-aftership-order.php';
 
-			$aftership_order = new Ingenius_Tracking_Paypal_Aftership_Order($order_id);
+			$aftership_order = new Ingenius_Tracking_Paypal_Aftership_Order($order_id, $mode);
 			$order_datas  = $aftership_order->it_get_order_datas();
 
 			if (empty($order_datas['tracking_number']) || (empty($order_datas['carrier_name']) && $mode === 'edit')) {

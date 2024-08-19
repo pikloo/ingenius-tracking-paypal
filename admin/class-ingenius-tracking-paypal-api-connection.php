@@ -80,9 +80,10 @@ class PayPalConnection
         return false; // Mode live activé
     }
 
-    public function it_get_order_tracking($transaction_id, $tracking_number, $access_token)
+
+    public function it_get_order_tracking($paypal_order_id, $access_token)
     {
-        return $this->it_handle_paypal_request('/v1/shipping/trackers/', $access_token, "{$transaction_id}-{$tracking_number}");
+        return $this->it_handle_paypal_request('/v2/checkout/orders', $access_token, $paypal_order_id);
     }
 
     public function it_add_order_tracking($paypal_order_id, $tracking_data,  $access_token)
@@ -91,10 +92,10 @@ class PayPalConnection
     }
 
     public function it_update_order_tracking($transaction_id, $tracking_data,  $access_token){
-        return $this->it_handle_paypal_request("/v1/shipping/trackers/", $access_token, "{$transaction_id}-{$tracking_data["tracking_number"]}", $tracking_data);
+        return $this->it_handle_paypal_request("/v1/shipping/trackers", $access_token, "{$transaction_id}-{$tracking_data["tracking_number"]}", $tracking_data, 'PUT');
     }
 
-    protected function it_handle_paypal_request($endpoint, $access_token, $params = null, $body = null)
+    protected function it_handle_paypal_request($endpoint, $access_token, $params = null, $body = null, $method=null)
     {
         $ch = curl_init();
         $url = $this->api_url . $endpoint;
@@ -102,7 +103,7 @@ class PayPalConnection
             $url .= '/' . $params;
         }
         $options = [
-            CURLOPT_URL => $this->api_url . $endpoint,
+            CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER => [
                 "Authorization: Bearer {$access_token}",
@@ -110,17 +111,28 @@ class PayPalConnection
             ]
         ];
 
-        if ($body) {
+        if ($body !== null) {
             $options[CURLOPT_POSTFIELDS] = json_encode($body);
         }
+
+        if($method !== null) {
+            $options[CURLOPT_CUSTOMREQUEST] = $method;
+        }
+
 
         curl_setopt_array($ch, $options);
 
         $response = curl_exec($ch);
         $http_status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        $request = curl_getinfo($ch);
 
-    
+        curl_close($ch);
+        $request_body = json_encode($body);
+        $request = json_encode($request);
+        error_log($url);
+        error_log("body : {$request_body}");
+        error_log("request : {$request}");
+        error_log("responst :{$response}");
         // Décoder la réponse pour obtenir les détails de la commande
         return [
             'code' => $http_status_code,
