@@ -6,31 +6,43 @@ use RuntimeException;
 
 class PayPalConnection
 {
-    private $client_id;
-    private $client_secret;
-    private $api_url;
+    /**
+     * ID client for Paypal API
+     *
+     * @var string
+     */
+    private string $client_id;
+    /**
+     * Client Secret for Paypal API
+     *
+     * @var string
+     */
+    private string $client_secret;
+    /**
+     * API Url for Paypal API
+     *
+     * @var string
+     */
+    private string $api_url;
 
     /**
-     * PayPalConnection constructor.
-     *
-     * @param string $client_id     Le Client ID de l'application PayPal.
-     * @param string $client_secret Le Secret de l'application PayPal.
-     * @param string $api_url       L'URL de l'API PayPal (sandbox ou live).
+     * @param string $client_id
+     * @param string $client_secret
+     * @param string $api_url
      */
     public function __construct(string $client_id, string $client_secret)
     {
         $this->client_id = $client_id;
         $this->client_secret = $client_secret;
-        // $this->api_url = 'https://api.sandbox.paypal.com'; //TEST
         $this->api_url = $this->it_is_paypal_sandbox_mode()
             ? 'https://api.sandbox.paypal.com'
             : 'https://api.paypal.com';
     }
 
     /**
-     * Méthode pour obtenir un Bearer Token.
-     *
-     * @throws RuntimeException Si la requête échoue ou si le token n'est pas valide.
+     * Retrieve the bearer token from PayPal API authentification endpoint
+     * @return string
+     * @throws RuntimeException
      */
     public function it_get_paypal_bearer_token(): string
     {
@@ -52,7 +64,7 @@ class PayPalConnection
         curl_close($ch);
 
         if ($http_code !== 200) {
-            throw new RuntimeException('Échec de la récupération du Bearer Token: ' . $response);
+            throw new RuntimeException(sprintf(__('Failed to retrieve token: %$', TEXT_DOMAIN), $response));
         }
 
         $response_data = json_decode($response);
@@ -60,42 +72,77 @@ class PayPalConnection
         $access_token = isset($response_data->access_token) ? $response_data->access_token : '';
 
         if (!$response_data || empty($access_token)) {
-            throw new RuntimeException('Réponse invalide lors de la récupération du Token Paypal');
+            throw new RuntimeException(__('Réponse invalide lors de la récupération du Token Paypal', TEXT_DOMAIN));
         }
 
         return $response;
     }
 
-
-    public static function it_is_paypal_sandbox_mode()
+    /**
+     * Determines whether the sandbox mode is enabled
+     *
+     * @return bool
+     */
+    public static function it_is_paypal_sandbox_mode(): bool
     {
-        // Récupère les paramètres de PayPal dans WooCommerce
         $paypal_settings = get_option('woocommerce-ppcp-settings');
 
-        // Vérifie si le mode sandbox est activé
         if (isset($paypal_settings['sandbox_on']) && $paypal_settings['sandbox_on']) {
-            return true; // Mode sandbox activé
+            return true;
         }
 
-        return false; // Mode live activé
+        return false;
     }
 
-
-    public function it_get_order_tracking($paypal_order_id, $access_token)
+    /**
+     * Get the tracking from an order
+     *
+     * @param string $paypal_order_id
+     * @param string $access_token
+     * @return array
+     */
+    public function it_get_order_tracking($paypal_order_id, $access_token): array
     {
         return $this->it_handle_paypal_request('/v2/checkout/orders', $access_token, $paypal_order_id);
     }
 
-    public function it_add_order_tracking($paypal_order_id, $tracking_data,  $access_token)
+    /**
+     * Add a new order tracking
+     *
+     * @param string $paypal_order_id
+     * @param array $tracking_data
+     * @param string $access_token
+     * @return array
+     */
+    public function it_add_order_tracking($paypal_order_id, $tracking_data,  $access_token): array
     {
         return $this->it_handle_paypal_request("/v2/checkout/orders/{$paypal_order_id}/track",  $access_token, null, $tracking_data);
     }
 
-    public function it_update_order_tracking($transaction_id, $tracking_data,  $access_token){
+    /**
+     * Update an order tracking
+     *
+     * @param string $transaction_id
+     * @param array $tracking_data
+     * @param string $access_token
+     * @return array
+     */
+    public function it_update_order_tracking($transaction_id, $tracking_data,  $access_token): array
+    {
         return $this->it_handle_paypal_request("/v1/shipping/trackers", $access_token, "{$transaction_id}-{$tracking_data["tracking_number"]}", $tracking_data, 'PUT');
     }
 
-    protected function it_handle_paypal_request($endpoint, $access_token, $params = null, $body = null, $method=null)
+    /**
+     * Handle a request to paypal API
+     *
+     * @param string $endpoint
+     * @param string $access_token
+     * @param string $params
+     * @param array $body
+     * @param string $method
+     * @return array
+     */
+    protected function it_handle_paypal_request($endpoint, $access_token, $params = null, $body = null, $method = null)
     {
         $ch = curl_init();
         $url = $this->api_url . $endpoint;
@@ -115,10 +162,9 @@ class PayPalConnection
             $options[CURLOPT_POSTFIELDS] = json_encode($body);
         }
 
-        if($method !== null) {
+        if ($method !== null) {
             $options[CURLOPT_CUSTOMREQUEST] = $method;
         }
-
 
         curl_setopt_array($ch, $options);
 
@@ -133,10 +179,10 @@ class PayPalConnection
         error_log("body : {$request_body}");
         error_log("request : {$request}");
         error_log("responst :{$response}");
-        // Décoder la réponse pour obtenir les détails de la commande
+
         return [
             'code' => $http_status_code,
-            'response'=> $response    
+            'response' => $response
         ];
     }
 }

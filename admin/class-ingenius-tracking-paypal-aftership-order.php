@@ -9,7 +9,7 @@ defined('ABSPATH') || exit;
 if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
     class Ingenius_Tracking_Paypal_Aftership_Order
     {
-        private $order_id;
+        private int $order_id;
 
         private string $tracking_number;
 
@@ -36,6 +36,10 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
             'yunexpress' => 'YUNEXPRESS'
         ];
 
+        /**
+         * @param int $order_id
+         * @param string $mode
+         */
         public function __construct($order_id, $mode = "edit")
         {
             $this->order_id = $order_id;
@@ -56,7 +60,12 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
             }
         }
 
-        public function it_get_order_datas()
+        /**
+         * Retrieve an array of order datas
+         *
+         * @return array
+         */
+        public function it_get_order_datas(): array
         {
             return [
                 'tracking_number' => $this->tracking_number,
@@ -66,27 +75,31 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
             ];
         }
 
-
+        /**
+         * Send order informations to Paypal:
+         * - Check if the required OrderTrackingEndpoint classes and methods are available
+         * - Initialize a Paypal instance connection with client ID & Client secret
+         * - Check the tracking linked to the order
+         * - Update tracking datas or add new tracking by deleting old tracking
+         *
+         * @return void
+         */
         public function it_send_tracking_to_paypal()
         {
-            // Check if the required classes and methods are available
             if (!class_exists('WooCommerce\PayPalCommerce\OrderTracking\Endpoint\OrderTrackingEndpoint')) {
                 return new WP_Error('class_not_found', __('The required class is not available.', 'woocommerce'));
             }
 
             $order = wc_get_order($this->order_id);
 
-            // Récupérer les credentials API Paypal
             $paypal_settings = get_option('woocommerce-ppcp-settings');
             $client_id = isset($paypal_settings['sandbox_on']) && $paypal_settings['sandbox_on'] ? $paypal_settings['client_id_sandbox'] : $paypal_settings['client_id_production'];
             $client_secret = isset($paypal_settings['sandbox_on']) && $paypal_settings['sandbox_on'] ? $paypal_settings['client_secret_sandbox'] : $paypal_settings['client_secret_production'];
 
             require_once plugin_dir_path(__FILE__) . 'class-ingenius-tracking-paypal-api-connection.php';
-            // Instanciation de la connexion PayPal
             $paypal_connection = new PayPalConnection($client_id, $client_secret);
 
             try {
-                // Obtenir le Bearer Token
                 $paypal_token = $paypal_connection->it_get_paypal_bearer_token();
                 $paypal_token_data = json_decode($paypal_token);
 
@@ -105,10 +118,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                     $tracking_data['status'] = self::ORDER_STATUS[$order->get_status()];
                 }
 
-                //Voir si un tracking comportant le num de transaction et le tracking number existe
                 $order_tracking_response = $paypal_connection->it_get_order_tracking($order->get_meta('_ppcp_paypal_order_id'), $paypal_token_data->access_token);
-
-                // // if($order_tracking_response['response']['tracking_number'] != $this->tracking_number) {
                 if ($order_tracking_response['code'] == 200) {
                     $order_details =  json_decode($order_tracking_response['response']);
                     $trackers = $order_details->purchase_units[0]->shipping->trackers;
@@ -140,7 +150,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                     }
                 }
             } catch (RuntimeException $e) {
-                error_log($e->getMessage());
                 echo 'Erreur : ' . $e->getMessage();
             }
         }

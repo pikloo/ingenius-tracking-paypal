@@ -7,7 +7,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Activator')) {
 class Ingenius_Tracking_Paypal_Activator
 {
 	/**
-	 * Check if WooCommerce and WooCommerce Payment Paypal are enabled
+	 * Check if WooCommerce, WooCommerce Payment Paypal and Aftership are enabled
 	 */
 	public static function activate()
 	{

@@ -7,7 +7,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Check_Dependencies')) {
     class Ingenius_Tracking_Paypal_Check_Dependencies
     {
         /**
-         * Check if WooCommerce and WooCommerce Payment Paypal are enabled
+         * Check if WooCommerce, WooCommerce Payment Paypal and Aftership are enabled
          * If they are not enabled, uninstall the plugin and prevent the user from continuing by adding a back link
          */
         public static function check_dependencies()
