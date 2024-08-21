@@ -30,7 +30,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
         protected const CARRIERS_NAME = [
             '4px' => 'FOUR_PX_EXPRESS',
             'china-post' => 'CN_CHINA_POST_EMS',
-            'colis-prive' => 'COLIS_PRIVE',
+            'z' => 'COLIS_PRIVE',
             'dhl' => 'DHL_API',
             'la-poste-colissimo' => 'FR_COLIS',
             'yunexpress' => 'YUNEXPRESS'
@@ -91,6 +91,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
             }
 
             $order = wc_get_order($this->order_id);
+            error_log(json_encode($order->get_data()));
 
             $paypal_settings = get_option('woocommerce-ppcp-settings');
             $client_id = isset($paypal_settings['sandbox_on']) && $paypal_settings['sandbox_on'] ? $paypal_settings['client_id_sandbox'] : $paypal_settings['client_id_production'];
@@ -117,6 +118,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                 if (isset(self::ORDER_STATUS[$order->get_status()])) {
                     $tracking_data['status'] = self::ORDER_STATUS[$order->get_status()];
                 }
+
 
                 $order_tracking_response = $paypal_connection->it_get_order_tracking($order->get_meta('_ppcp_paypal_order_id'), $paypal_token_data->access_token);
                 if ($order_tracking_response['code'] == 200) {
