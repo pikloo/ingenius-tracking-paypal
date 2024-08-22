@@ -29,6 +29,13 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 		private $order_updated = false;
 
 		/**
+		 * The Import state storage
+		 *
+		 * @var boolean
+		 */
+		private $is_wp_all_import = false;
+
+		/**
 		 * Initialize the class and set its properties.
 		 *
 		 * @param      string    $plugin_name       The name of this plugin.
@@ -59,6 +66,19 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 			wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/ingenius-tracking-paypal-admin.js', array('jquery'), $this->version, false);
 		}
 
+
+		// // Méthode pour définir le contexte d'import
+		// public function set_wp_all_import_context()
+		// {
+		// 	$this->is_wp_all_import = true;
+		// }
+
+		// // Méthode pour réinitialiser le contexte d'import
+		// public function reset_wp_all_import_context()
+		// {
+		// 	$this->is_wp_all_import = false;
+		// }
+
 		/**
 		 * Detects if the order has been manually saved
 		 * Check if order exist and prevent the action from being executed only once 
@@ -68,6 +88,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 		 */
 		public function it_handle_order_save($order_id)
 		{
+
 			if (!$order_id) {
 				return;
 			}
@@ -78,10 +99,9 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 
 			$this->order_updated = true;
 
-			if (
-				isset($_REQUEST['_wpnonce'])
-				&& wp_verify_nonce($_REQUEST['_wpnonce'], "update-order_{$order_id}")
-			) {
+			if (!$this->is_wp_all_import && is_admin()) {
+				// Logique pour les commandes modifiées via l'administration
+				error_log("Commande $order_id modifiée via l'interface d'administration.");
 				$this->it_woocommerce_aftership_order_paid($order_id);
 			}
 		}
@@ -95,12 +115,12 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 		 */
 		public function it_handle_wp_all_import_order($post_id)
 		{
-			// Vérifier que l'ID de la commande est valide
-			if (!$post_id || get_post_type($post_id) !== 'shop_order') {
-				return;
+			$post_type = get_post_type($post_id);
+			if ($post_type === 'shop_order_placehold') {
+				// Logique pour les commandes modifiées via WP All Import
+				error_log("Commande $post_id modifiée via WP All Import.");
+				$this->it_woocommerce_aftership_order_paid($post_id, 'import');
 			}
-
-			$this->it_woocommerce_aftership_order_paid($post_id, 'import');
 		}
 
 		/**

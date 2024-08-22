@@ -178,7 +178,7 @@ class PayPalConnection
         error_log($url);
         error_log("body : {$request_body}");
         error_log("request : {$request}");
-        error_log("responst :{$response}");
+        error_log("response :{$response}");
 
         return [
             'code' => $http_status_code,

@@ -52,7 +52,6 @@ if (!class_exists('Ingenius_Tracking_Paypal')) {
 			$this->load_dependencies();
 			$this->set_locale();
 			$this->define_admin_hooks();
-			// $this->define_public_hooks(); // TODO: Delete if it not needed
 
 		}
 
@@ -123,8 +122,15 @@ if (!class_exists('Ingenius_Tracking_Paypal')) {
 
 			$this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_styles');
 			$this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
-			$this->loader->add_action('woocommerce_update_order', $plugin_admin, 'it_handle_order_save', 10, 2);
-			$this->loader->add_action('pmxi_saved_post', $plugin_admin, 'it_handle_wp_all_import_order', 10, 3);
+
+			// Enregistrement des actions pour WP All Import
+			// $this->loader->add_action('pmxi_before_post_import', $plugin_admin, 'set_wp_all_import_context', 5);
+			// $this->loader->add_action('pmxi_after_post_import', $plugin_admin, 'reset_wp_all_import_context', 5);
+			$this->loader->add_action('pmxi_saved_post', $plugin_admin, 'it_handle_wp_all_import_order', 5, 1);
+
+			// Enregistrement de l'action pour la sauvegarde des commandes dans WooCommerce
+			$this->loader->add_action('woocommerce_update_order', $plugin_admin, 'it_handle_order_save', 10);
+			
 		}
 
 		/**
