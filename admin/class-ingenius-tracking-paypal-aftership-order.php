@@ -2,6 +2,7 @@
 
 namespace IngeniusTrackingPaypal\Admin;
 
+use WC_Order;
 use WooCommerce\PayPalCommerce\ApiClient\Exception\RuntimeException;
 use WP_Error;
 
@@ -15,6 +16,8 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
 
         private string $carrier_name;
 
+        private array $tracking_items = [];
+
         private string $payment_method;
 
         private array $items = [];
@@ -25,7 +28,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
             'delivered' => 'DELIVERED',
             'cancelled' => 'CANCELLED',
         ];
-
 
         protected const CARRIERS_NAME = [
             '4px' => 'FOUR_PX_EXPRESS',
@@ -45,39 +47,21 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
             $this->order_id = $order_id;
             $order = wc_get_order($order_id);
             $this->tracking_number = $order->get_meta('_aftership_tracking_number') ?? '';
-
+            $tracking_items = $order->get_meta('_aftership_tracking_items', true);
+            //Déserialize de la métadonnée
+            $tracking_items_data = maybe_unserialize($tracking_items);
+            // Vérifier que la désérialisation a réussi
+            if (is_array($tracking_items_data)) {
+                $this->tracking_items = $tracking_items_data;
+            }
             if ($mode === 'edit') {
                 $this->carrier_name = $order->get_meta('_aftership_tracking_provider_name') ?? '';
             } else {
                 // Mettre la poste colissimo si rien n'est renseigné
                 $this->carrier_name = $order->get_meta('_aftership_tracking_provider_name') ? $order->get_meta('_aftership_tracking_provider_name') : 'la-poste-colissimo';
                 //Mettre à jour aussi _aftership_tracking_items
-                $tracking_items = $order->get_meta('_aftership_tracking_items', true);
-                if ($tracking_items) {
-
-                    // Désérialiser la méta-donnée
-                    $tracking_items_data = maybe_unserialize($tracking_items);
-
-                    // Vérifier que la désérialisation a réussi
-                    if (is_array($tracking_items_data) && isset($tracking_items_data[0])) {
-                        // Modifier les clés "tracking_number" et "slug"
-                        error_log("#name provide {$tracking_items_data[0]["slug"]}, #new provide {$this->carrier_name} , #number {$tracking_items_data[0]["tracking_number"]}");
-                        $tracking_items_data[0]["tracking_number"] = $this->tracking_number;
-                        $tracking_items_data[0]["slug"] = $this->carrier_name;
-                        $tracking_items_data[0]["metrics"]["updated_at"] = current_time('c');
-
-                        // Sérialiser à nouveau la méta-donnée
-                        $tracking_items_serialized = maybe_serialize($tracking_items_data);
-
-                        // Mettre à jour la méta-donnée dans la base de données
-                        $order->update_meta_data('_aftership_tracking_items', $tracking_items_serialized);
-                        $order->save();
-
-
-                        error_log(json_encode($order->get_meta('_aftership_tracking_items', true)));
-                    } else {
-                        error_log('Erreur: Données de tracking introuvables ou incorrectes.');
-                    }
+                if (!empty($this->tracking_items)) {
+                    $this->it_save_tracking_items($order);
                 }
             }
             $this->payment_method = $order->get_payment_method();
@@ -122,10 +106,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
          */
         public function it_send_tracking_to_paypal()
         {
-            if (!class_exists('WooCommerce\PayPalCommerce\OrderTracking\Endpoint\OrderTrackingEndpoint')) {
-                return new WP_Error('class_not_found', __('The required class is not available.', 'woocommerce'));
-            }
-
             $order = wc_get_order($this->order_id);
 
             $paypal_settings = get_option('woocommerce-ppcp-settings');
@@ -139,6 +119,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                 $paypal_token = $paypal_connection->it_get_paypal_bearer_token();
                 $paypal_token_data = json_decode($paypal_token);
 
+                //Préparation des datas à envoyer à paypal
                 $tracking_data = [
                     'tracking_number' => $this->tracking_number,
                     'carrier'         => isset(self::CARRIERS_NAME[$this->carrier_name]) ? self::CARRIERS_NAME[$this->carrier_name] : 'OTHER',
@@ -146,6 +127,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                     'items' => $this->items,
                 ];
 
+                // Si le transporteur est 'OTHER', ajouter le nom du transporteur dans la clé 'carrier_name_other'
                 if ($tracking_data['carrier'] === 'OTHER') {
                     $tracking_data['carrier_name_other'] = $this->carrier_name;
                 }
@@ -156,48 +138,53 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                     $tracking_data['status'] = 'SHIPPED';
                 }
 
-
+                // Check si la commande est déja suivi par Paypal tracking 
                 $order_tracking_response = $paypal_connection->it_get_order_tracking($order->get_meta('_ppcp_paypal_order_id'), $paypal_token_data->access_token);
                 if ($order_tracking_response['code'] == 200) {
                     $order_details =  json_decode($order_tracking_response['response']);
                     $shipping_data = $order_details->purchase_units[0]->shipping;
-                    error_log(json_encode($shipping_data));
 
+                    // Récupération des tracking dans les détails de la commande tracké par Paypal
                     if (isset($shipping_data->trackers)) {
                         $trackers = $shipping_data->trackers;
                         foreach ($trackers as $tracker) {
+                            // Récupération du numéro de tracking dans la clé id (ID de la transaction-numéro de tracking)
                             $parts = explode('-', $tracker->id);
                             $status = $tracker->status;
                             $tracking_number = isset($parts[1]) ? $parts[1] : '';
-                            if (
-                                $tracking_number !== $this->tracking_number
-                                //  && $status !== 'SHIPPED'
-                            ) {
+                            //Annulation du tracking si le numéro de tracking est différent du numéro de tracking de la commande enregistrée
+                            if ($tracking_number != $this->tracking_number) {
                                 $tracking_data_to_update['status'] = 'CANCELLED';
                                 $tracking_data_to_update['tracking_number'] = $tracking_number;
                                 $paypal_connection->it_update_order_tracking($order->get_transaction_id(), $tracking_data_to_update, $paypal_token_data->access_token);
                             }
                         }
 
+                        // Recherche si le numéro de tracking lié à la commande existe coté Paypal
                         $trackers_map = array_map(function ($tracker) {
                             return (array) $tracker;
                         }, $trackers);
 
                         $column = array_column($trackers_map, 'id');
-                        $index = array_search("{$order->get_transaction_id()}-{$this->tracking_number}", $column);
+                        $order_tracking = array_search("{$order->get_transaction_id()}-{$this->tracking_number}", $column);
 
-                        if (!$index) {
+                        // Ajout du tracking Paypal si le numéro de tracking lié à la commande n'existe ou modification dans le cas contraire
+                        if (!$order_tracking) {
                             $paypal_connection->it_add_order_tracking($order->get_meta('_ppcp_paypal_order_id'), $tracking_data, $paypal_token_data->access_token);
                         } else {
-                            $tracking_data['status'] = 'SHIPPED'; //TODO Reprendre le statut de la meta aftership_tracking_item
+                            // Annulation du tracking paypal si le tracking number n'est pas renseignée 
+                            if(empty($this->tracking_number)) {
+                                $tracking_data['status'] = 'CANCELLED';
+                            }
                             $paypal_connection->it_update_order_tracking($order->get_transaction_id(), $tracking_data, $paypal_token_data->access_token);
                         }
                     } else {
+                        //Ajout du tracking Paypal si n'y a aucun tracking Paypal lié à la commande courante
                         $paypal_connection->it_add_order_tracking($order->get_meta('_ppcp_paypal_order_id'), $tracking_data, $paypal_token_data->access_token);
                     }
                 }
             } catch (RuntimeException $e) {
-                echo 'Erreur : ' . $e->getMessage();
+                error_log($e->getMessage()) ;
             }
         }
 
@@ -218,6 +205,19 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                 $this->order_id
             );
             wp_mail($admin_email, $subject, $message);
+        }
+
+        private function it_save_tracking_items(WC_Order $order)
+        {
+            $this->tracking_items[0]["tracking_number"] = $this->tracking_number;
+            $this->tracking_items[0]["slug"] = $this->carrier_name;
+            $this->tracking_items[0]["metrics"]["updated_at"] = current_time('c');
+            // Sérialiser à nouveau la méta-donnée
+            $tracking_items_serialized = maybe_serialize($this->tracking_items);
+            // Mettre à jour la méta-donnée dans la base de données
+            $order->update_meta_data('_aftership_tracking_items', $tracking_items_serialized);
+            $order->save();
+            error_log(json_encode($order->get_meta('_aftership_tracking_items', true)));
         }
     }
 }

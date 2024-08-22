@@ -96,6 +96,7 @@ class PayPalConnection
 
     /**
      * Get the tracking from an order
+     * @link https://developer.paypal.com/docs/api/orders/v2/#orders_get
      *
      * @param string $paypal_order_id
      * @param string $access_token
@@ -108,6 +109,7 @@ class PayPalConnection
 
     /**
      * Add a new order tracking
+     * @link https://developer.paypal.com/docs/api/orders/v2/#orders_track_create
      *
      * @param string $paypal_order_id
      * @param array $tracking_data
@@ -121,6 +123,7 @@ class PayPalConnection
 
     /**
      * Update an order tracking
+     * @link https://developer.paypal.com/docs/api/tracking/v1/#trackers_put
      *
      * @param string $transaction_id
      * @param array $tracking_data
