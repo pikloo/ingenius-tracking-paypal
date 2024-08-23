@@ -28,22 +28,22 @@ class PayPalConnection
      * @param string $client_secret
      * @param string $api_url
      */
+
+    protected const PAYPAL_LIVE_API_URL = 'https://api.paypal.com';
+    
     public function __construct(string $client_id, string $client_secret)
     {
         $this->client_id = $client_id;
         $this->client_secret = $client_secret;
-        $this->api_url = $this->it_is_paypal_sandbox_mode()
-            ? 'https://api.sandbox.paypal.com'
-            : 'https://api.paypal.com';
+        $this->api_url = self::PAYPAL_LIVE_API_URL;
     }
 
     /**
      * Retrieve the bearer token from PayPal API authentification endpoint
      * @link https://developer.paypal.com/api/rest/authentication/
-     * @return string
-     * @throws RuntimeException
+     * 
      */
-    public function it_get_paypal_bearer_token(): string
+    public function get_paypal_bearer_token(): string
     {
         $ch = curl_init();
 
@@ -77,74 +77,42 @@ class PayPalConnection
         return $response;
     }
 
-    /**
-     * Determines whether the sandbox mode is enabled
-     *
-     * @return bool
-     */
-    public static function it_is_paypal_sandbox_mode(): bool
-    {
-        $paypal_settings = get_option('woocommerce-ppcp-settings');
-
-        if (isset($paypal_settings['sandbox_on']) && $paypal_settings['sandbox_on']) {
-            return true;
-        }
-
-        return false;
-    }
 
     /**
      * Get order details
      * @link https://developer.paypal.com/docs/api/orders/v2/#orders_get
      *
-     * @param string $paypal_order_id
-     * @param string $access_token
-     * @return array
      */
-    public function it_get_order_details($paypal_order_id, $access_token): array
+    public function get_order_details(string $paypal_order_id, string $access_token): array
     {
-        return $this->it_handle_paypal_request('/v2/checkout/orders', $access_token, $paypal_order_id);
+        return $this->handle_paypal_request('/v2/checkout/orders', $access_token, $paypal_order_id);
     }
 
     /**
      * Add a new order tracking
      * @link https://developer.paypal.com/docs/api/orders/v2/#orders_track_create
      *
-     * @param string $paypal_order_id
-     * @param array $tracking_data
-     * @param string $access_token
-     * @return array
      */
-    public function it_add_order_tracking($paypal_order_id, $tracking_data,  $access_token): array
+    public function add_order_tracking(string $paypal_order_id, array $tracking_data, string $access_token): array
     {
-        return $this->it_handle_paypal_request("/v2/checkout/orders/{$paypal_order_id}/track",  $access_token, null, $tracking_data);
+        return $this->handle_paypal_request("/v2/checkout/orders/{$paypal_order_id}/track",  $access_token, null, $tracking_data);
     }
 
     /**
      * Update an order tracking
      * @link https://developer.paypal.com/docs/api/tracking/v1/#trackers_put
      *
-     * @param string $transaction_id
-     * @param array $tracking_data
-     * @param string $access_token
-     * @return array
      */
-    public function it_update_order_tracking($transaction_id, $tracking_data,  $access_token): array
+    public function update_order_tracking(string $transaction_id, array $tracking_data, string $access_token): array
     {
-        return $this->it_handle_paypal_request("/v1/shipping/trackers", $access_token, "{$transaction_id}-{$tracking_data["tracking_number"]}", $tracking_data, 'PUT');
+        return $this->handle_paypal_request("/v1/shipping/trackers", $access_token, "{$transaction_id}-{$tracking_data["tracking_number"]}", $tracking_data, 'PUT');
     }
 
     /**
      * Handle a request to paypal API
      *
-     * @param string $endpoint
-     * @param string $access_token
-     * @param string $params
-     * @param array $body
-     * @param string $method
-     * @return array
      */
-    protected function it_handle_paypal_request($endpoint, $access_token, $params = null, $body = null, $method = null)
+    protected function handle_paypal_request(string $endpoint, string $access_token,string|null $params = null, array|null $body = null, string|null $method = null): array
     {
         $ch = curl_init();
         $url = $this->api_url . $endpoint;

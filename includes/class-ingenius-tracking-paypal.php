@@ -1,6 +1,5 @@
 <?php
 
-defined('ABSPATH') || exit;
 
 if (!class_exists('Ingenius_Tracking_Paypal')) {
 	class Ingenius_Tracking_Paypal
@@ -119,8 +118,8 @@ if (!class_exists('Ingenius_Tracking_Paypal')) {
 			$this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_styles');
 			$this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
 			
-			$this->loader->add_action('pmxi_saved_post', $plugin_admin, 'it_handle_wp_all_import_order', 5, 1);
-			$this->loader->add_action('woocommerce_update_order', $plugin_admin, 'it_handle_order_save', 10);
+			$this->loader->add_action('pmxi_saved_post', $plugin_admin, 'handle_wp_all_import_order', 5, 1);
+			$this->loader->add_action('woocommerce_update_order', $plugin_admin, 'handle_order_save', 10);
 			
 		}
 

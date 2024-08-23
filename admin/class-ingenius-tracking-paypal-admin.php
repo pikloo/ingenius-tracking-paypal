@@ -1,7 +1,5 @@
 <?php
 
-
-defined('ABSPATH') || exit;
 if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 	class Ingenius_Tracking_Paypal_Admin
 	{
@@ -63,16 +61,14 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 		 * Detects if the order has been manually saved
 		 * Check if order exist and prevent the action from being executed only once 
 		 *
-		 * @param mixed $order_id
-		 * @return void
 		 */
-		public function it_handle_order_save($order_id)
+		public function handle_order_save(int $order_id): void
 		{
 			if (!$order_id || $this->order_updated) return;
 
 			if (is_admin() && isset($_POST['save'])) {
 				$this->order_updated = true;
-				$this->it_woocommerce_aftership_order_paid($order_id);
+				$this->process_paypal_order_tracking($order_id);
 			}
 		}
 
@@ -80,34 +76,24 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 		/**
 		 * Detects if the order has been import via WP All Import
 		 *
-		 * @param mixed $post_id
-		 * @return void
 		 */
-		public function it_handle_wp_all_import_order($post_id)
+		public function handle_wp_all_import_order(int $post_id): void
 		{
 			$post_type = get_post_type($post_id);
 			if ($post_type === 'shop_order_placehold') {
-				$this->it_woocommerce_aftership_order_paid($post_id, 'import');
+				$this->process_paypal_order_tracking($post_id, 'import');
 			}
 		}
 
 		/**
-		 * Retrieve the information of an order managed by Aftership and paid by Paypal
+		 * Treats order tracking for order paid with PayPal
 		 *
-		 * @param mixed $order_id
-		 * @param string $mode
-		 * @return void
 		 */
-		private function it_woocommerce_aftership_order_paid($order_id, $mode = 'edit')
+		private function process_paypal_order_tracking(int $order_id, string $mode = 'edit'): void
 		{
-			require_once plugin_dir_path(__FILE__) . 'classes/class-ingenius-tracking-paypal-aftership-order.php';
+			require_once plugin_dir_path(__FILE__) . 'classes/class-ingenius-tracking-paypal-order.php';
 
-			$aftership_order = new Ingenius_Tracking_Paypal_Aftership_Order($order_id, $mode);
-			$order_datas  = $aftership_order->it_get_order_datas();
-
-			if ($order_datas['payment_method'] === 'ppcp-gateway') {
-				$aftership_order->it_send_tracking_to_paypal();
-			}
+			new Ingenius_Tracking_Paypal_Order($order_id, $mode);
 		}
 	}
 }

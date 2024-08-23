@@ -1,6 +1,5 @@
 <?php
 
-defined('ABSPATH') || exit;
 if (!class_exists('Ingenius_Tracking_Paypal_Check_Dependencies')) {
     class Ingenius_Tracking_Paypal_Check_Dependencies
     {

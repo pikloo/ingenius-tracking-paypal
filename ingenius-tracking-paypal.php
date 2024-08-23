@@ -64,7 +64,7 @@ register_deactivation_hook(__FILE__, 'it_deactivate');
  */
 function it_check_dependencies()
 {
-	require_once plugin_dir_path(__FILE__) . 'includes/class-ingenius-tracking-paypal-check-dependencies.php';
+	require_once plugin_dir_path(__FILE__) . 'admin/classes/class-ingenius-tracking-paypal-check-dependencies.php';
 	Ingenius_Tracking_Paypal_Check_Dependencies::check_dependencies();
 }
 
