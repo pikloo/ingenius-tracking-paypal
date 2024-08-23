@@ -3,13 +3,11 @@
 
 /**
  *
- * @link              http://example.com
  * @since             1.0.0
  * @package           Ingenius_Tracking_Paypal
  *
  * @wordpress-plugin
  * Plugin Name:       Ingenius Tracking Paypal
- * Plugin URI:        http://example.com/ingenius-tracking-paypal-uri/
  * Description:       This plugin retrieves tracking numbers and carrier data when an order is paid by paypal and then sends this information to WooCommerce Paypal Payment.
  * Version:           1.0.0
  * Author:            Ingenius
@@ -21,19 +19,11 @@
  * Requires Plugins: woocommerce, woocommerce-paypal-payments, aftership-woocommerce-tracking
  */
 
+
 // If this file is called directly, abort.
 if (! defined('WPINC')) {
 	die;
 }
-
-require __DIR__ . '/vendor/autoload.php';
-
-use IngeniusTrackingPaypal\Includes\Ingenius_Tracking_Paypal;
-use IngeniusTrackingPaypal\Includes\Ingenius_Tracking_Paypal_Activator;
-use IngeniusTrackingPaypal\Includes\Ingenius_Tracking_Paypal_Check_Dependencies;
-use IngeniusTrackingPaypal\Includes\Ingenius_Tracking_Paypal_Deactivator;
-
-
 
 /**
  * Currently plugin version.

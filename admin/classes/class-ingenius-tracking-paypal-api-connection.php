@@ -1,7 +1,5 @@
 <?php
 
-namespace IngeniusTrackingPaypal\Admin;
-
 use RuntimeException;
 
 class PayPalConnection

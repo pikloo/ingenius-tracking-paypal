@@ -1,9 +1,5 @@
 <?php
 
-namespace IngeniusTrackingPaypal\Includes;
-
-use IngeniusTrackingPaypal\Admin\Ingenius_Tracking_Paypal_Admin;
-
 defined('ABSPATH') || exit;
 
 if (!class_exists('Ingenius_Tracking_Paypal')) {

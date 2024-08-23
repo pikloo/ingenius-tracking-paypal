@@ -1,10 +1,5 @@
 <?php
 
-namespace IngeniusTrackingPaypal\Admin;
-
-use WC_Order;
-use WooCommerce\PayPalCommerce\ApiClient\Exception\RuntimeException;
-
 defined('ABSPATH') || exit;
 if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
     class Ingenius_Tracking_Paypal_Aftership_Order

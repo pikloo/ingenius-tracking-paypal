@@ -1,6 +1,5 @@
 <?php
 
-namespace IngeniusTrackingPaypal\Admin;
 
 defined('ABSPATH') || exit;
 if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
@@ -69,10 +68,12 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 		 */
 		public function it_handle_order_save($order_id)
 		{
-			if ( !$order_id || $this->order_updated) return;
-			//TODO: trouver un moyen de lancer le traitement que si la modification ne vient qu'après avoir appuyer sur "mettre à jour"
-			$this->order_updated = true;
-			$this->it_woocommerce_aftership_order_paid($order_id);
+			if (!$order_id || $this->order_updated) return;
+
+			if (is_admin() && isset($_POST['save'])) {
+				$this->order_updated = true;
+				$this->it_woocommerce_aftership_order_paid($order_id);
+			}
 		}
 
 
@@ -99,7 +100,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 		 */
 		private function it_woocommerce_aftership_order_paid($order_id, $mode = 'edit')
 		{
-			require_once plugin_dir_path(__FILE__) . 'class-ingenius-tracking-paypal-aftership-order.php';
+			require_once plugin_dir_path(__FILE__) . 'classes/class-ingenius-tracking-paypal-aftership-order.php';
 
 			$aftership_order = new Ingenius_Tracking_Paypal_Aftership_Order($order_id, $mode);
 			$order_datas  = $aftership_order->it_get_order_datas();
