@@ -70,8 +70,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin')) {
 		public function it_handle_order_save($order_id)
 		{
 			if ( !$order_id || $this->order_updated) return;
-			//TODO: trouver un moyen de lancer le traitement que si la modification nen vient qu'après avoir appuyer sur "mettre à jour"
-			
+			//TODO: trouver un moyen de lancer le traitement que si la modification ne vient qu'après avoir appuyer sur "mettre à jour"
 			$this->order_updated = true;
 			$this->it_woocommerce_aftership_order_paid($order_id);
 		}

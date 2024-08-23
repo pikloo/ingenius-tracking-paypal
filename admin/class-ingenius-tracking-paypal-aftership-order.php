@@ -47,9 +47,9 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
             $this->order_id = $order_id;
             $order = wc_get_order($order_id);
             $this->tracking_number = $order->get_meta('_aftership_tracking_number') ?? '';
-            $tracking_items = $order->get_meta('_aftership_tracking_items', true);
+            $aftership_meta_tracking_items = $order->get_meta('_aftership_tracking_items', true);
             //Déserialize de la métadonnée
-            $tracking_items_data = maybe_unserialize($tracking_items);
+            $tracking_items_data = maybe_unserialize($aftership_meta_tracking_items);
             // Vérifier que la désérialisation a réussi
             if (is_array($tracking_items_data)) {
                 $this->tracking_items = $tracking_items_data;
@@ -151,7 +151,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                         foreach ($trackers as $tracker) {
                             // Récupération du numéro de tracking dans la clé id (ID de la transaction-numéro de tracking)
                             $parts = explode('-', $tracker->id);
-                            $status = $tracker->status;
                             $tracking_number = isset($parts[1]) ? $parts[1] : '';
                             //Annulation du tracking si le numéro de tracking est différent du numéro de tracking de la commande enregistrée
                             if ($tracking_number != $this->tracking_number) {
@@ -197,15 +196,12 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
         private function it_notify_admin_of_unknown_carrier()
         {
 
-            //TODO: Créer une adresse mail uniquement destinée au debug
-            $admin_email = get_option('admin_email');
-            $subject = 'Transporteur inconnu lors de l\'import de la commande';
-            $message = sprintf(
-                'Le transporteur "%s" utilisé pour la commande #%d n\'est pas reconnu. Veuillez vérifier et mettre à jour les informations si nécessaire.',
+            $subject = __('Transporteur inconnu lors de l\'import de la commande', TEXT_DOMAIN);
+            $message = sprintf(__('Le transporteur "%s" utilisé pour la commande #%d n\'est pas reconnu. Veuillez vérifier et mettre à jour les informations si nécessaire.', TEXT_DOMAIN),
                 $this->carrier_name,
                 $this->order_id
             );
-            wp_mail($admin_email, $subject, $message);
+            wp_mail(ADMIN_EMAIL, $subject, $message);
         }
 
         private function it_save_aftership_tracking_items(WC_Order $order)
@@ -213,10 +209,8 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
             $this->tracking_items[0]["tracking_number"] = $this->tracking_number;
             $this->tracking_items[0]["slug"] = $this->carrier_name;
             $this->tracking_items[0]["metrics"]["updated_at"] = current_time('c');
-            // Sérialiser à nouveau la méta-donnée
-            $tracking_items_serialized = maybe_serialize($this->tracking_items);
-            // Mettre à jour la méta-donnée dans la base de données
-            $order->update_meta_data('_aftership_tracking_items', $tracking_items_serialized);
+            
+            $order->update_meta_data('_aftership_tracking_items', $this->tracking_items);
             $order->save();
         }
     }

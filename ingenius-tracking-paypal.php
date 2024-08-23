@@ -43,6 +43,7 @@ use IngeniusTrackingPaypal\Includes\Ingenius_Tracking_Paypal_Deactivator;
 define('INGENIUS_TRACKING_PAYPAL_VERSION', '1.0.0');
 define('TEXT_DOMAIN', 'ingenius-tracking-paypal');
 define('PLUGIN_NAME', 'Ingenius Tracking Paypal');
+define('ADMIN_EMAIL', 'it_unknown_carrier@hotmail.com');
 
 /**
  * The code that runs during plugin activation.
