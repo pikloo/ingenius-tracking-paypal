@@ -61,7 +61,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                 $this->carrier_name = $order->get_meta('_aftership_tracking_provider_name') ? $order->get_meta('_aftership_tracking_provider_name') : 'la-poste-colissimo';
                 //Mettre à jour aussi _aftership_tracking_items
                 if (!empty($this->tracking_items)) {
-                    $this->it_save_tracking_items($order);
+                    $this->it_save_aftership_tracking_items($order);
                 }
             }
             $this->payment_method = $order->get_payment_method();
@@ -128,6 +128,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
                 ];
 
                 // Si le transporteur est 'OTHER', ajouter le nom du transporteur dans la clé 'carrier_name_other'
+                // @see https://developer.paypal.com/docs/tracking/reference/carriers/
                 if ($tracking_data['carrier'] === 'OTHER') {
                     $tracking_data['carrier_name_other'] = $this->carrier_name;
                 }
@@ -207,7 +208,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
             wp_mail($admin_email, $subject, $message);
         }
 
-        private function it_save_tracking_items(WC_Order $order)
+        private function it_save_aftership_tracking_items(WC_Order $order)
         {
             $this->tracking_items[0]["tracking_number"] = $this->tracking_number;
             $this->tracking_items[0]["slug"] = $this->carrier_name;
@@ -217,7 +218,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
             // Mettre à jour la méta-donnée dans la base de données
             $order->update_meta_data('_aftership_tracking_items', $tracking_items_serialized);
             $order->save();
-            error_log(json_encode($order->get_meta('_aftership_tracking_items', true)));
+            error_log("#méta aftership item :" .json_encode($order->get_meta('_aftership_tracking_items', true)));
         }
     }
 }
