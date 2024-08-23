@@ -41,6 +41,7 @@ class PayPalConnection
 
     /**
      * Retrieve the bearer token from PayPal API authentification endpoint
+     * @link https://developer.paypal.com/api/rest/authentication/
      * @return string
      * @throws RuntimeException
      */
@@ -95,14 +96,14 @@ class PayPalConnection
     }
 
     /**
-     * Get the tracking from an order
+     * Get order details
      * @link https://developer.paypal.com/docs/api/orders/v2/#orders_get
      *
      * @param string $paypal_order_id
      * @param string $access_token
      * @return array
      */
-    public function it_get_order_tracking($paypal_order_id, $access_token): array
+    public function it_get_order_details($paypal_order_id, $access_token): array
     {
         return $this->it_handle_paypal_request('/v2/checkout/orders', $access_token, $paypal_order_id);
     }
