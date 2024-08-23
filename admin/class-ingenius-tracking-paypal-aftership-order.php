@@ -57,7 +57,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
             if ($mode === 'edit') {
                 $this->carrier_name = $order->get_meta('_aftership_tracking_provider_name') ?? '';
             } else {
-                // Mettre la poste colissimo si rien n'est renseigné
+                //Mettre la poste colissimo si rien n'est renseigné
                 $this->carrier_name = $order->get_meta('_aftership_tracking_provider_name') ? $order->get_meta('_aftership_tracking_provider_name') : 'la-poste-colissimo';
                 //Mettre à jour aussi _aftership_tracking_items
                 if (!empty($this->tracking_items)) {
@@ -218,7 +218,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Aftership_Order')) {
             // Mettre à jour la méta-donnée dans la base de données
             $order->update_meta_data('_aftership_tracking_items', $tracking_items_serialized);
             $order->save();
-            error_log("#méta aftership item :" .json_encode($order->get_meta('_aftership_tracking_items', true)));
         }
     }
 }

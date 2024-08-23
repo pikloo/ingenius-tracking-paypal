@@ -176,12 +176,7 @@ class PayPalConnection
         $request = curl_getinfo($ch);
 
         curl_close($ch);
-        $request_body = json_encode($body);
         $request = json_encode($request);
-        error_log($url);
-        error_log("body : {$request_body}");
-        error_log("request : {$request}");
-        error_log("response :{$response}");
 
         return [
             'code' => $http_status_code,
