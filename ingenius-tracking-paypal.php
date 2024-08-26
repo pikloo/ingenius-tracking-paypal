@@ -19,6 +19,9 @@
  * Requires Plugins: woocommerce, woocommerce-paypal-payments, aftership-woocommerce-tracking
  */
 
+require 'plugin-update-checker-5.4/plugin-update-checker.php';
+
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
 // If this file is called directly, abort.
 if (! defined('WPINC')) {
@@ -87,3 +90,15 @@ function it_run()
 	$plugin->run();
 }
 it_run();
+
+$myUpdateChecker = PucFactory::buildUpdateChecker(
+	'https://github.com/pikloo/ingenius-tracking-paypal',
+	__FILE__,
+	'ingenius-tracking-paypal'
+);
+
+//Set the branch that contains the stable release.
+$myUpdateChecker->setBranch('main');
+
+//Optional: If you're using a private repository, specify the access token like this:
+$myUpdateChecker->setAuthentication('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');
