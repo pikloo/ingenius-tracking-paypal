@@ -12,7 +12,7 @@
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       ingenius-tracking-paypal
  * Domain Path:       /languages
- * Requires Plugins: woocommerce, woocommerce-paypal-payments, aftership-woocommerce-tracking
+ * Requires Plugins: woocommerce, woocommerce-paypal-payments
  *
  * @since             1.0.0
  * @package           Ingenius_Tracking_Paypal
