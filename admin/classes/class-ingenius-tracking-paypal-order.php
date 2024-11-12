@@ -169,9 +169,9 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
                 }
 
 
-                if (! empty($this->tracking_items)) {
-                    $this->save_aftership_tracking_items($order);
-                }
+                // if (! empty($this->tracking_items)) {
+                $this->save_aftership_tracking_items($order);
+                // }
             }
 
             $this->payment_method = $order->get_payment_method();
