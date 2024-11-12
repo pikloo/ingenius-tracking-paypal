@@ -87,8 +87,10 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
         );
 
         protected const AFTERSHIP_TRACKING_NUMBER_META_NAME   = '_aftership_tracking_number';
+        protected const SEND_TO_AFTERSHIP_TRACKING_NUMBER_META_NAME   = 'aftership_tracking_number';
         protected const AFTERSHIP_TRACKING_ITEMS_META_NAME    = '_aftership_tracking_items';
         protected const AFTERSHIP_TRACKING_PROVIDER_META_NAME = '_aftership_tracking_provider_name';
+        protected const SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME = 'aftership_carrier';
         protected const PAYPAL_ORDER_ID_META_NAME             = '_ppcp_paypal_order_id';
         protected const DEFAULT_IMPORT_PROVIDER_NAME          = 'la-poste-colissimo';
         protected const PAYPAL_PAYMENT_NAME_SLUG              = 'ppcp-gateway';
@@ -124,7 +126,11 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
          */
         private function set_order_datas(WC_Order $order, string $mode): void
         {
-            $this->tracking_number         = $order->get_meta(self::AFTERSHIP_TRACKING_NUMBER_META_NAME) ?? '';
+            $this->tracking_number = $order->get_meta(self::AFTERSHIP_TRACKING_NUMBER_META_NAME)
+                ?? $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_NUMBER_META_NAME)
+                ?? '';
+
+
             $aftership_meta_tracking_items = $order->get_meta(self::AFTERSHIP_TRACKING_ITEMS_META_NAME, true);
 
             $tracking_items_data = maybe_unserialize($aftership_meta_tracking_items);
@@ -134,12 +140,15 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
             }
 
             if ('edit' === $mode) {
-                $this->carrier_name = $order->get_meta(self::AFTERSHIP_TRACKING_PROVIDER_META_NAME) ?? '';
+                $this->carrier_name = $order->get_meta(self::AFTERSHIP_TRACKING_PROVIDER_META_NAME)
+                    ?? $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME)
+                    ?? '';
             } else {
 
                 $site_language_code = explode('_', get_locale())[0];
 
                 $this->carrier_name = $order->get_meta(self::AFTERSHIP_TRACKING_PROVIDER_META_NAME)
+                    ?? $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME)
                     ?? ($site_language_code === 'fr'
                         ? self::DEFAULT_IMPORT_PROVIDER_NAME
                         : self::FOREIGN_DEFAULT_CARRIER_NAME[$site_language_code]);
