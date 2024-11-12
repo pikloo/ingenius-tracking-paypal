@@ -126,9 +126,14 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
          */
         private function set_order_datas(WC_Order $order, string $mode): void
         {
-            $this->tracking_number = $order->get_meta(self::AFTERSHIP_TRACKING_NUMBER_META_NAME)
-                ?? $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_NUMBER_META_NAME)
-                ?? '';
+            $tracking_number = $order->get_meta(self::AFTERSHIP_TRACKING_NUMBER_META_NAME);
+
+            if (empty($tracking_number)) {
+                $tracking_number = $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_NUMBER_META_NAME);
+            }
+
+            $this->tracking_number = $tracking_number ?: '';
+
 
 
             $aftership_meta_tracking_items = $order->get_meta(self::AFTERSHIP_TRACKING_ITEMS_META_NAME, true);
@@ -140,18 +145,28 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
             }
 
             if ('edit' === $mode) {
-                $this->carrier_name = $order->get_meta(self::AFTERSHIP_TRACKING_PROVIDER_META_NAME)
-                    ?? $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME)
-                    ?? '';
+                $carrier_name = $order->get_meta(self::AFTERSHIP_TRACKING_PROVIDER_META_NAME);
+
+                if (empty($carrier_name)) {
+                    $carrier_name = $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME);
+                }
+
+                $this->carrier_name = $carrier_name ?: '';
             } else {
 
                 $site_language_code = explode('_', get_locale())[0];
 
-                $this->carrier_name = $order->get_meta(self::AFTERSHIP_TRACKING_PROVIDER_META_NAME)
-                    ?? $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME)
-                    ?? ($site_language_code === 'fr'
+                $this->carrier_name = $order->get_meta(self::AFTERSHIP_TRACKING_PROVIDER_META_NAME);
+
+                if (empty($this->carrier_name)) {
+                    $this->carrier_name = $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME);
+                }
+
+                if (empty($this->carrier_name)) {
+                    $this->carrier_name = ($site_language_code === 'fr')
                         ? self::DEFAULT_IMPORT_PROVIDER_NAME
-                        : self::FOREIGN_DEFAULT_CARRIER_NAME[$site_language_code]);
+                        : (self::FOREIGN_DEFAULT_CARRIER_NAME[$site_language_code]);
+                }
 
 
                 if (! empty($this->tracking_items)) {
@@ -198,6 +213,7 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
                 $paypal_token      = $paypal_connection->get_paypal_bearer_token();
                 $paypal_token_data = json_decode($paypal_token);
 
+
                 $tracking_data = $this->prepare_data_to_send($order);
 
                 $order_details_response = $paypal_connection->get_order_details($order->get_meta(self::PAYPAL_ORDER_ID_META_NAME), $paypal_token_data->access_token);
@@ -205,7 +221,6 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
                 if (200 === $order_details_response['code']) {
                     $order_details    = json_decode($order_details_response['response']);
                     $paypal_trackings = $this->get_tracking_data_from_paypal_order($order_details);
-
                     $this->update_order_paypal_trackings_data($paypal_connection, $order, $paypal_trackings, $tracking_data, $paypal_token_data);
                 }
             } catch (RuntimeException $e) {
@@ -261,7 +276,8 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
         {
             if (isset($order_details->purchase_units[0]->shipping)) {
                 $shipping_data = $order_details->purchase_units[0]->shipping;
-                return $shipping_data->trackers;
+
+                if (isset($shipping_data->trackers)) return $shipping_data->trackers;
             }
 
             return false;
@@ -284,7 +300,7 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
 
                 if (! $order_tracking) {
                     $paypal_connection->add_order_tracking($order->get_meta(self::PAYPAL_ORDER_ID_META_NAME), $tracking_data, $paypal_token_data->access_token);
-                    $this->check_carrier_name_for_notification();
+                    // $this->check_carrier_name_for_notification();
                 } else {
 
                     if (empty($this->tracking_number)) {
@@ -292,11 +308,12 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
                     }
 
                     $paypal_connection->update_order_tracking($order->get_transaction_id(), $tracking_data, $paypal_token_data->access_token);
-                    $this->check_carrier_name_for_notification();
+                    // $this->check_carrier_name_for_notification();
                 }
             } else {
+
                 $paypal_connection->add_order_tracking($order->get_meta(self::PAYPAL_ORDER_ID_META_NAME), $tracking_data, $paypal_token_data->access_token);
-                $this->check_carrier_name_for_notification();
+                // $this->check_carrier_name_for_notification();
             }
         }
 
