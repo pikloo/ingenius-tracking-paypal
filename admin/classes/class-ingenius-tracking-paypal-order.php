@@ -93,7 +93,13 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
         protected const SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME = 'aftership_carrier';
         protected const PAYPAL_ORDER_ID_META_NAME             = '_ppcp_paypal_order_id';
         protected const DEFAULT_IMPORT_PROVIDER_NAME          = 'la-poste-colissimo';
-        protected const PAYPAL_PAYMENT_NAME_SLUG              = 'ppcp-gateway';
+        protected const PAYPAL_PAYMENT_NAME_SLUG              = array(
+            'ppcp-gateway',
+            'ppcp-credit-card-gateway',
+            'ppcp-pay-upon-invoice',
+            'ppcp-paylater'
+        );
+
 
 
         /**
@@ -190,7 +196,7 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
          */
         private function check_paypal_payment_method(): bool
         {
-            if (self::PAYPAL_PAYMENT_NAME_SLUG !== $this->payment_method) {
+            if (!in_array($this->payment_method, self::PAYPAL_PAYMENT_NAME_SLUG)) {
                 return false;
             }
 
