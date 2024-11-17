@@ -120,6 +120,7 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
                 return;
             }
 
+
             $this->send_tracking_to_paypal();
         }
 
@@ -133,9 +134,10 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
         private function set_order_datas(WC_Order $order, string $mode): void
         {
             $tracking_number = $order->get_meta(self::AFTERSHIP_TRACKING_NUMBER_META_NAME);
+            $send_to_aftership_tracking_number = $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_NUMBER_META_NAME);
 
-            if (empty($tracking_number)) {
-                $tracking_number = $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_NUMBER_META_NAME);
+            if (empty($tracking_number) || !empty($send_to_aftership_tracking_number)) {
+                $tracking_number = $send_to_aftership_tracking_number;
             }
 
             $this->tracking_number = $tracking_number ?: '';
@@ -152,9 +154,9 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
 
             if ('edit' === $mode) {
                 $carrier_name = $order->get_meta(self::AFTERSHIP_TRACKING_PROVIDER_META_NAME);
-
-                if (empty($carrier_name)) {
-                    $carrier_name = $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME);
+                $send_to_aftership_carrier_name = $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME);
+                if (empty($carrier_name) || !empty($send_to_aftership_carrier_name)) {
+                    $carrier_name = $send_to_aftership_carrier_name;
                 }
 
                 $this->carrier_name = $carrier_name ?: '';

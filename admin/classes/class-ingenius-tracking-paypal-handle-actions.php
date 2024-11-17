@@ -13,7 +13,7 @@ if (! class_exists('Ingenius_Tracking_Paypal_Handle_Actions')) {
         private $order_updated = false;
 
         /**
-         * Detects if the order has been manually saved
+         * Detects if the order has been manually or by REST API saved
          * Check if order exist and prevent the action from being executed only once
          *
          * @param int $order_id The id of current WooCommerce order.
@@ -24,11 +24,8 @@ if (! class_exists('Ingenius_Tracking_Paypal_Handle_Actions')) {
                 return;
             }
 
-            if (is_admin() && isset($_POST['save'])) //phpcs:ignore
-            {
-                $this->order_updated = true;
-                $this->process_paypal_order_tracking($order_id);
-            }
+            $this->order_updated = true;
+            $this->process_paypal_order_tracking($order_id);
         }
 
 
@@ -54,7 +51,6 @@ if (! class_exists('Ingenius_Tracking_Paypal_Handle_Actions')) {
         private function process_paypal_order_tracking(int $order_id, string $mode = 'edit'): void
         {
             require_once plugin_dir_path(__FILE__) . 'class-ingenius-tracking-paypal-order.php';
-
             new Ingenius_Tracking_Paypal_Order($order_id, $mode);
         }
     }
