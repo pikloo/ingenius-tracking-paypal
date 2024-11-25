@@ -88,9 +88,11 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
 
         protected const AFTERSHIP_TRACKING_NUMBER_META_NAME   = '_aftership_tracking_number';
         protected const SEND_TO_AFTERSHIP_TRACKING_NUMBER_META_NAME   = 'aftership_tracking_number';
+        protected const FBALI_AFTERSHIP_TRACKING_NUMBER_META_NAME   = 'tracking_number';
         protected const AFTERSHIP_TRACKING_ITEMS_META_NAME    = '_aftership_tracking_items';
         protected const AFTERSHIP_TRACKING_PROVIDER_META_NAME = '_aftership_tracking_provider_name';
         protected const SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME = 'aftership_carrier';
+        protected const FBALI_AFTERSHIP_TRACKING_PROVIDER_META_NAME = 'carrier';
         protected const PAYPAL_ORDER_ID_META_NAME             = '_ppcp_paypal_order_id';
         protected const DEFAULT_IMPORT_PROVIDER_NAME          = 'la-poste-colissimo';
         protected const PAYPAL_PAYMENT_NAME_SLUG              = array(
@@ -135,14 +137,15 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
         {
             $tracking_number = $order->get_meta(self::AFTERSHIP_TRACKING_NUMBER_META_NAME);
             $send_to_aftership_tracking_number = $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_NUMBER_META_NAME);
+            $fbali_tracking_number = $order->get_meta(self::FBALI_AFTERSHIP_TRACKING_NUMBER_META_NAME);
 
-            if (empty($tracking_number) || !empty($send_to_aftership_tracking_number)) {
+            if (empty($tracking_number)) {
+                $tracking_number = $send_to_aftership_tracking_number ?: $fbali_tracking_number;
+            } elseif (!empty($send_to_aftership_tracking_number)) {
                 $tracking_number = $send_to_aftership_tracking_number;
             }
 
             $this->tracking_number = $tracking_number ?: '';
-
-
 
             $aftership_meta_tracking_items = $order->get_meta(self::AFTERSHIP_TRACKING_ITEMS_META_NAME, true);
 
@@ -168,6 +171,10 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
 
                 if (empty($this->carrier_name)) {
                     $this->carrier_name = $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME);
+                }
+
+                if (empty($this->carrier_name)) {
+                    $this->carrier_name = $order->get_meta(self::FBALI_AFTERSHIP_TRACKING_PROVIDER_META_NAME);
                 }
 
                 if (empty($this->carrier_name)) {
