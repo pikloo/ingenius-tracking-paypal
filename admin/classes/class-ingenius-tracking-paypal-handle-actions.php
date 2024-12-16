@@ -37,7 +37,7 @@ if (! class_exists('Ingenius_Tracking_Paypal_Handle_Actions')) {
         public function handle_wp_all_import_order(int $post_id): void
         {
             $post_type = get_post_type($post_id);
-            if ('shop_order_placehold' === $post_type) {
+            if ('shop_order_placehold' === $post_type || 'shop_order' === $post_type) {
                 $this->process_paypal_order_tracking($post_id, 'import');
             }
         }
