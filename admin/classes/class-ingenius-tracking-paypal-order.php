@@ -310,7 +310,7 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
         private function update_order_paypal_trackings_data(PayPalConnection $paypal_connection, WC_Order $order, mixed $paypal_trackings, array $tracking_data, $paypal_token_data): void
         {
             if ($paypal_trackings) {
-                $this->cancel_different_paypal_tracking_numbers($paypal_connection, $order, $paypal_trackings, $paypal_token_data);
+                // $this->cancel_different_paypal_tracking_numbers($paypal_connection, $order, $paypal_trackings, $paypal_token_data);
                 $order_tracking = $this->check_paypal_tracking_number_exists($order, $paypal_trackings);
 
                 if (! $order_tracking) {
