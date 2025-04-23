@@ -5,7 +5,7 @@
  *
  * Plugin Name:       Ingenius Tracking Paypal
  * Description:       This plugin retrieves tracking numbers and carrier data when an order is paid by paypal and then sends this information to WooCommerce Paypal Payment.
- * Version:           1.1.2
+ * Version:           1.1.3
  * Author:            Ingenius
  * Author URI:        https://ingenius.agency/
  * License:           GPL-2.0+
@@ -32,7 +32,7 @@ if (! defined('WPINC')) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define('INGENIUS_TRACKING_PAYPAL_VERSION', '1.1.2');
+define('INGENIUS_TRACKING_PAYPAL_VERSION', '1.1.3');
 define('TEXT_DOMAIN', 'ingenius-tracking-paypal');
 define('PLUGIN_NAME', 'Ingenius Tracking Paypal');
 define('ADMIN_EMAIL', 'it_unknown_carrier@hotmail.com');
@@ -98,4 +98,4 @@ $update_checker = PucFactory::buildUpdateChecker(
 // Set the branch that contains the stable release.
 $update_checker->setBranch('main');
 
-$update_checker->setAuthentication('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');
+// $update_checker->setAuthentication(credentials: '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');
