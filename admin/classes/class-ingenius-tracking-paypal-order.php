@@ -322,6 +322,8 @@ if (! class_exists('Ingenius_Tracking_Paypal_Order')) {
                     //     $tracking_data['status'] = 'CANCELLED';
                     // }
 
+                    $tracking_data['status'] = 'SHIPPED';
+
                     $paypal_connection->update_order_tracking($order->get_transaction_id(), $tracking_data, $paypal_token_data->access_token);
                     // $this->check_carrier_name_for_notification();
                 }
