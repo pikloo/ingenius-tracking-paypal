@@ -47,5 +47,8 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 2. This is the second screen shot
 
 == Changelog ==
+= 2.0.1.1 =
+* FIX MAJ update checker
+
 = 2.0.1 =
 * MAJ update checker
