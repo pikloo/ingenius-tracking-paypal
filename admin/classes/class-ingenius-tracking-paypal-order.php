@@ -234,6 +234,11 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
                 $paypal_token_data = json_decode($paypal_token);
 
                 if (empty($paypal_token_data->access_token)) {
+                    $this->add_tracking_note(
+                        $order,
+                        __('Impossible de récupérer un token PayPal, le suivi n\'a pas été envoyé.', 'ingenius-tracking-paypal'),
+                        true
+                    );
                     return;
                 }
 
@@ -259,6 +264,17 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
                     );
                 } else {
                     error_log("[PAYPAL_TRACKING] Failed to fetch PayPal order details (main order). Response code: {$order_details_response['code']} - Order: {$this->order_id}");
+                    $this->add_tracking_note(
+                        $order,
+                        sprintf(
+                            /* translators: 1: PayPal order id. 2: HTTP status code. 3: API error. */
+                            __('Impossible de récupérer la commande PayPal %1$s (code %2$d). %3$s', 'ingenius-tracking-paypal'),
+                            $paypal_order_id,
+                            $order_details_response['code'],
+                            $this->extract_paypal_error_message($order_details_response)
+                        ),
+                        true
+                    );
                 }
 
                 // === TRAITEMENT UPSELLS ===
@@ -299,6 +315,17 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
 
                     } else {
                         error_log("[PAYPAL_TRACKING] Failed to fetch capture details for upsell capture $upsell_capture_id. Code: {$capture_details['code']}");
+                        $this->add_tracking_note(
+                            $order,
+                            sprintf(
+                                /* translators: 1: capture id. 2: HTTP status. 3: API error. */
+                                __('Impossible de récupérer la capture PayPal %1$s (code %2$d). %3$s', 'ingenius-tracking-paypal'),
+                                $upsell_capture_id,
+                                $capture_details['code'],
+                                $this->extract_paypal_error_message($capture_details)
+                            ),
+                            true
+                        );
                     }
                 } else {
                     error_log("[PAYPAL_TRACKING] No upsell capture ID found for order {$this->order_id}");
@@ -306,6 +333,15 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
 
             } catch (RuntimeException $e) {
                 error_log("[PAYPAL_TRACKING] Exception for order {$this->order_id}: " . $e->getMessage());
+                $this->add_tracking_note(
+                    $order,
+                    sprintf(
+                        /* translators: %s: exception message. */
+                        __('Exception lors de l\'envoi du tracking vers PayPal: %s', 'ingenius-tracking-paypal'),
+                        $e->getMessage()
+                    ),
+                    true
+                );
             }
         }
 
@@ -401,6 +437,14 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
                 );
 
                 error_log("[PAYPAL_TRACKING] Update tracking response: " . print_r($response, true));
+                $this->handle_tracking_api_response(
+                    $order,
+                    $response,
+                    $tracking_data,
+                    true,
+                    null,
+                    $txn_for_tracker
+                );
 
             } else {
                 $paypal_order_id = $override_paypal_order_id ?: $order->get_meta(self::PAYPAL_ORDER_ID_META_NAME);
@@ -413,6 +457,14 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
                 );
 
                 error_log("[PAYPAL_TRACKING] Add tracking response: " . print_r($response, true));
+                $this->handle_tracking_api_response(
+                    $order,
+                    $response,
+                    $tracking_data,
+                    false,
+                    $paypal_order_id,
+                    $override_capture_id
+                );
             }
         }
 
@@ -506,6 +558,125 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
 
             $order->update_meta_data(self::AFTERSHIP_TRACKING_ITEMS_META_NAME, $this->tracking_items);
             $order->save();
+        }
+
+        /**
+         * Attach a note to the order with the current tracking status.
+         */
+        private function add_tracking_note(WC_Order $order, string $message, bool $is_error = false): void
+        {
+            $prefix = $is_error ? __('PayPal Tracking - erreur', 'ingenius-tracking-paypal') : __('PayPal Tracking', 'ingenius-tracking-paypal');
+            $order->add_order_note(sprintf('%s: %s', $prefix, $message));
+        }
+
+        /**
+         * Build an order note based on a PayPal API response.
+         */
+        private function handle_tracking_api_response(
+            WC_Order $order,
+            array $response,
+            array $tracking_data,
+            bool $is_update,
+            ?string $paypal_order_id = null,
+            ?string $capture_id = null
+        ): void {
+            $status_code = isset($response['code']) ? (int) $response['code'] : 0;
+            $tracking_number = $tracking_data['tracking_number'] ?? __('(inconnu)', 'ingenius-tracking-paypal');
+            $target_label = $is_update ? __('capture', 'ingenius-tracking-paypal') : __('commande PayPal', 'ingenius-tracking-paypal');
+            $target_value = $is_update
+                ? ($capture_id ?: ($tracking_data['capture_id'] ?? $order->get_transaction_id()))
+                : ($paypal_order_id ?: $order->get_meta(self::PAYPAL_ORDER_ID_META_NAME));
+
+            if ($this->is_success_http_code($status_code)) {
+                $this->add_tracking_note(
+                    $order,
+                    sprintf(
+                        __('Tracking "%1$s" envoyé à PayPal (%2$s %3$s).', 'ingenius-tracking-paypal'),
+                        $tracking_number,
+                        $target_label,
+                        $target_value
+                    )
+                );
+
+                return;
+            }
+
+            $this->add_tracking_note(
+                $order,
+                sprintf(
+                    /* translators: 1: tracking number. 2: target label. 3: target value. 4: HTTP code. 5: API error. */
+                    __('Erreur lors de l\'envoi du tracking "%1$s" (%2$s %3$s). Code %4$d. %5$s', 'ingenius-tracking-paypal'),
+                    $tracking_number,
+                    $target_label,
+                    $target_value,
+                    $status_code,
+                    $this->extract_paypal_error_message($response)
+                ),
+                true
+            );
+        }
+
+        /**
+         * Check if an HTTP code should be considered successful.
+         */
+        private function is_success_http_code(int $status_code): bool
+        {
+            return $status_code >= 200 && $status_code < 300;
+        }
+
+        /**
+         * Formats errors returned by the PayPal API.
+         */
+        private function extract_paypal_error_message(array $response): string
+        {
+            $raw_body = isset($response['response']) ? trim((string) $response['response']) : '';
+
+            if ('' === $raw_body) {
+                return __('Réponse vide retournée par PayPal.', 'ingenius-tracking-paypal');
+            }
+
+            $decoded = json_decode($raw_body, true);
+
+            if (JSON_ERROR_NONE !== json_last_error() || !is_array($decoded)) {
+                return $raw_body;
+            }
+
+            $message_parts = array();
+
+            if (!empty($decoded['name'])) {
+                $message_parts[] = $decoded['name'];
+            }
+
+            if (!empty($decoded['message'])) {
+                $message_parts[] = $decoded['message'];
+            }
+
+            if (!empty($decoded['details']) && is_array($decoded['details'])) {
+                $detail = $decoded['details'][0];
+                $detail_parts = array();
+
+                if (!empty($detail['field'])) {
+                    $detail_parts[] = $detail['field'];
+                }
+
+                if (!empty($detail['value'])) {
+                    $detail_parts[] = $detail['value'];
+                }
+
+                if (!empty($detail['issue'])) {
+                    $detail_parts[] = $detail['issue'];
+                }
+
+                if (!empty($detail_parts)) {
+                    $message_parts[] = implode(' - ', $detail_parts);
+                }
+            }
+
+            if (empty($message_parts)) {
+                return wp_json_encode($decoded);
+            }
+
+            return implode(' | ', $message_parts);
         }
     }
 }
