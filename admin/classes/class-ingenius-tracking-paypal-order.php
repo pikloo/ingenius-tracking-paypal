@@ -122,10 +122,12 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
             $this->is_admin_edit_mode = 'edit' === $mode;
 
             if (!$this->check_paypal_payment_method()) {
-                error_log("[PAYPAL_TRACKING] Payment method is not PayPal for order $order_id");
                 return;
             }
 
+            if (empty($this->tracking_number)) {
+                return;
+            }
 
             $this->send_tracking_to_paypal();
         }
