@@ -1,4 +1,57 @@
-/**
- * All of the CSS for your admin-specific functionality should be
- * included in this file.
- */
+.itp-sync-app {
+    background: #fff;
+    border: 1px solid #dcdcde;
+    padding: 24px;
+    border-radius: 8px;
+    margin-top: 24px;
+}
+
+.itp-sync-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.itp-sync-card {
+    flex: 1;
+    background: #f6f7f7;
+    border: 1px solid #dcdcde;
+    border-radius: 6px;
+    padding: 16px;
+    text-align: center;
+}
+
+.itp-sync-card__label {
+    display: block;
+    font-size: 13px;
+    color: #50575e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.itp-sync-card__value {
+    display: block;
+    font-size: 28px;
+    font-weight: 600;
+    color: #1d2327;
+    margin-top: 4px;
+}
+
+.itp-sync-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.itp-sync-actions .spinner {
+    visibility: hidden;
+}
+
+.itp-sync-app[data-loading="1"] .spinner {
+    visibility: visible;
+}
+
+#itp-sync-log {
+    margin-top: 16px;
+    padding: 12px;
+}

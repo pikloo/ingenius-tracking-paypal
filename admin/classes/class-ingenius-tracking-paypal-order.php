@@ -94,6 +94,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
         protected const SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME = 'aftership_carrier';
         protected const FBALI_AFTERSHIP_TRACKING_PROVIDER_META_NAME = 'carrier';
         protected const PAYPAL_ORDER_ID_META_NAME = '_ppcp_paypal_order_id';
+        public const TRACKING_SENT_META_NAME = 'itp_send_to_ppl';
         protected const DEFAULT_IMPORT_PROVIDER_NAME = 'la-poste-colissimo';
         protected const PAYPAL_PAYMENT_NAME_SLUG = array(
             'ppcp-gateway',
@@ -158,6 +159,8 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
                 $this->tracking_items = $tracking_items_data;
             }
 
+            $site_language_code = explode('_', get_locale())[0];
+
             if ('edit' === $mode) {
                 $carrier_name = $order->get_meta(self::AFTERSHIP_TRACKING_PROVIDER_META_NAME);
                 $send_to_aftership_carrier_name = $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME);
@@ -165,10 +168,14 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
                     $carrier_name = $send_to_aftership_carrier_name;
                 }
 
+                if (empty($carrier_name)) {
+                    $carrier_name = ($site_language_code === 'fr')
+                        ? self::DEFAULT_IMPORT_PROVIDER_NAME
+                        : (self::FOREIGN_DEFAULT_CARRIER_NAME[$site_language_code] ?? self::DEFAULT_IMPORT_PROVIDER_NAME);
+                }
+
                 $this->carrier_name = $carrier_name ?: '';
             } else {
-
-                $site_language_code = explode('_', get_locale())[0];
 
                 $this->carrier_name = $order->get_meta(self::AFTERSHIP_TRACKING_PROVIDER_META_NAME);
 
@@ -183,13 +190,17 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
                 if (empty($this->carrier_name)) {
                     $this->carrier_name = ($site_language_code === 'fr')
                         ? self::DEFAULT_IMPORT_PROVIDER_NAME
-                        : (self::FOREIGN_DEFAULT_CARRIER_NAME[$site_language_code]);
+                        : (self::FOREIGN_DEFAULT_CARRIER_NAME[$site_language_code] ?? self::DEFAULT_IMPORT_PROVIDER_NAME);
                 }
 
 
                 // if (! empty($this->tracking_items)) {
                 $this->save_aftership_tracking_items($order);
                 // }
+            }
+
+            if (!empty($this->tracking_number)) {
+                $this->initialize_tracking_sent_meta($order);
             }
 
             $this->payment_method = $order->get_payment_method();
@@ -210,11 +221,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
         {
             return strpos($this->payment_method, 'ppcp') === 0;
 
-            // if (!in_array($this->payment_method, self::PAYPAL_PAYMENT_NAME_SLUG)) {
-            //     return false;
-            // }
-
-            // return true;
         }
 
 
@@ -383,7 +389,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
             $tracking_data['status'] = self::ORDER_STATUS[$order->get_status()] ?? 'SHIPPED';
 
             error_log("[PAYPAL_TRACKING] Data to send: " . print_r($tracking_data, true));
-
 
             return $tracking_data;
         }
@@ -561,6 +566,32 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
         }
 
         /**
+         * Initialize the tracking sent meta when a tracking number exists.
+         */
+        private function initialize_tracking_sent_meta(WC_Order $order): void
+        {
+            if (metadata_exists('post', $order->get_id(), self::TRACKING_SENT_META_NAME)) {
+                return;
+            }
+
+            $order->update_meta_data(self::TRACKING_SENT_META_NAME, '0');
+            $order->save_meta_data();
+        }
+
+        /**
+         * Mark the order tracking as sent to PayPal.
+         */
+        private function mark_tracking_as_sent(WC_Order $order): void
+        {
+            if ('1' === $order->get_meta(self::TRACKING_SENT_META_NAME, true)) {
+                return;
+            }
+
+            $order->update_meta_data(self::TRACKING_SENT_META_NAME, '1');
+            $order->save_meta_data();
+        }
+
+        /**
          * Attach a note to the order with the current tracking status.
          */
         private function add_tracking_note(WC_Order $order, string $message, bool $is_error = false): void
@@ -588,6 +619,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
                 : ($paypal_order_id ?: $order->get_meta(self::PAYPAL_ORDER_ID_META_NAME));
 
             if ($this->is_success_http_code($status_code)) {
+                $this->mark_tracking_as_sent($order);
                 $this->add_tracking_note(
                     $order,
                     sprintf(
@@ -678,5 +710,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
 
             return implode(' | ', $message_parts);
         }
+
     }
 }

@@ -85,6 +85,11 @@ if (!class_exists('Ingenius_Tracking_Paypal')) {
             require_once plugin_dir_path(dirname(__FILE__)) . 'admin/class-ingenius-tracking-paypal-admin.php';
 
             /**
+             * The class responsible for the PayPal tracking admin sync page.
+             */
+            require_once plugin_dir_path(dirname(__FILE__)) . 'admin/classes/class-ingenius-tracking-paypal-admin-sync.php';
+
+            /**
              * The class responsible for handling actions that occur when a order is saved.
              */
             require_once plugin_dir_path(dirname(__FILE__)) . 'admin/classes/class-ingenius-tracking-paypal-handle-actions.php';
@@ -118,10 +123,13 @@ if (!class_exists('Ingenius_Tracking_Paypal')) {
         {
 
             $plugin_admin = new Ingenius_Tracking_Paypal_Admin($this->get_plugin_name(), $this->get_version());
+            $plugin_admin_sync = new Ingenius_Tracking_Paypal_Admin_Sync();
             $plugin_handle_actions = new Ingenius_Tracking_Paypal_Handle_Actions();
 
             $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_styles');
             $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
+            $this->loader->add_action('admin_menu', $plugin_admin_sync, 'register_menu_page');
+            $this->loader->add_action('wp_ajax_itp_sync_orders', $plugin_admin_sync, 'handle_ajax_sync');
 
             $this->loader->add_action('pmxi_saved_post', $plugin_handle_actions, 'handle_wp_all_import_order', 5, 1);
             $this->loader->add_action('woocommerce_update_order', $plugin_handle_actions, 'handle_order_save', 10);
