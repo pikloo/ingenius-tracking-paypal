@@ -59,6 +59,9 @@ Oui, le plugin écoute `pmxi_saved_post` et déclenche l'envoi vers PayPal dès 
 
 == Changelog ==
 
+= 2.0.1.5 =
+* Ajout de la new meta genius_tracking_number
+
 = 2.0.1.4 =
 * Empêcher l'appel API Paypal si le tracking number n'est pas renseigné
 

@@ -86,13 +86,19 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
             'pt' => 'portugal-ctt',
         );
 
-        protected const AFTERSHIP_TRACKING_NUMBER_META_NAME = '_aftership_tracking_number';
-        protected const SEND_TO_AFTERSHIP_TRACKING_NUMBER_META_NAME = 'aftership_tracking_number';
-        protected const FBALI_AFTERSHIP_TRACKING_NUMBER_META_NAME = 'tracking_number';
+        protected const TRACKING_NUMBER_META_NAME = array(
+            'aftership_tracking_number',
+            '_aftership_tracking_number',
+            'tracking_number',
+            'genius_tracking_number',
+        );
         protected const AFTERSHIP_TRACKING_ITEMS_META_NAME = '_aftership_tracking_items';
-        protected const AFTERSHIP_TRACKING_PROVIDER_META_NAME = '_aftership_tracking_provider_name';
-        protected const SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME = 'aftership_carrier';
-        protected const FBALI_AFTERSHIP_TRACKING_PROVIDER_META_NAME = 'carrier';
+        protected const TRACKING_PROVIDER_META_NAME = array(
+            '_aftership_tracking_provider_name',
+            'aftership_carrier',
+            'carrier',
+            'genius_tracking_provider',
+        );
         protected const PAYPAL_ORDER_ID_META_NAME = '_ppcp_paypal_order_id';
         public const TRACKING_SENT_META_NAME = 'itp_send_to_ppl';
         protected const DEFAULT_IMPORT_PROVIDER_NAME = 'la-poste-colissimo';
@@ -141,15 +147,7 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
          */
         private function set_order_datas(WC_Order $order, string $mode): void
         {
-            $tracking_number = $order->get_meta(self::AFTERSHIP_TRACKING_NUMBER_META_NAME);
-            $send_to_aftership_tracking_number = $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_NUMBER_META_NAME);
-            $fbali_tracking_number = $order->get_meta(self::FBALI_AFTERSHIP_TRACKING_NUMBER_META_NAME);
-
-            if (empty($tracking_number)) {
-                $tracking_number = $send_to_aftership_tracking_number ?: $fbali_tracking_number;
-            } elseif (!empty($send_to_aftership_tracking_number)) {
-                $tracking_number = $send_to_aftership_tracking_number;
-            }
+            $tracking_number = $this->get_first_non_empty_meta_value($order, self::TRACKING_NUMBER_META_NAME);
 
             $this->tracking_number = $tracking_number ?: '';
 
@@ -163,42 +161,27 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
 
             $site_language_code = explode('_', get_locale())[0];
 
-            if ('edit' === $mode) {
-                $carrier_name = $order->get_meta(self::AFTERSHIP_TRACKING_PROVIDER_META_NAME);
-                $send_to_aftership_carrier_name = $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME);
-                if (empty($carrier_name) || !empty($send_to_aftership_carrier_name)) {
-                    $carrier_name = $send_to_aftership_carrier_name;
-                }
+            $carrier_meta_keys = ('edit' === $mode)
+                ? array(
+                    self::TRACKING_PROVIDER_META_NAME[1],
+                    self::TRACKING_PROVIDER_META_NAME[0],
+                    self::TRACKING_PROVIDER_META_NAME[2],
+                    self::TRACKING_PROVIDER_META_NAME[3],
+                )
+                : self::TRACKING_PROVIDER_META_NAME;
 
-                if (empty($carrier_name)) {
-                    $carrier_name = ($site_language_code === 'fr')
-                        ? self::DEFAULT_IMPORT_PROVIDER_NAME
-                        : (self::FOREIGN_DEFAULT_CARRIER_NAME[$site_language_code] ?? self::DEFAULT_IMPORT_PROVIDER_NAME);
-                }
+            $carrier_name = $this->get_first_non_empty_meta_value($order, $carrier_meta_keys);
 
-                $this->carrier_name = $carrier_name ?: '';
-            } else {
+            if (empty($carrier_name)) {
+                $carrier_name = ($site_language_code === 'fr')
+                    ? self::DEFAULT_IMPORT_PROVIDER_NAME
+                    : (self::FOREIGN_DEFAULT_CARRIER_NAME[$site_language_code] ?? self::DEFAULT_IMPORT_PROVIDER_NAME);
+            }
 
-                $this->carrier_name = $order->get_meta(self::AFTERSHIP_TRACKING_PROVIDER_META_NAME);
+            $this->carrier_name = $carrier_name ?: '';
 
-                if (empty($this->carrier_name)) {
-                    $this->carrier_name = $order->get_meta(self::SEND_TO_AFTERSHIP_TRACKING_PROVIDER_META_NAME);
-                }
-
-                if (empty($this->carrier_name)) {
-                    $this->carrier_name = $order->get_meta(self::FBALI_AFTERSHIP_TRACKING_PROVIDER_META_NAME);
-                }
-
-                if (empty($this->carrier_name)) {
-                    $this->carrier_name = ($site_language_code === 'fr')
-                        ? self::DEFAULT_IMPORT_PROVIDER_NAME
-                        : (self::FOREIGN_DEFAULT_CARRIER_NAME[$site_language_code] ?? self::DEFAULT_IMPORT_PROVIDER_NAME);
-                }
-
-
-                // if (! empty($this->tracking_items)) {
+            if ('edit' !== $mode) {
                 $this->save_aftership_tracking_items($order);
-                // }
             }
 
             if (!empty($this->tracking_number)) {
@@ -214,6 +197,22 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
                     'name' => $item->get_name(),
                 );
             }
+        }
+
+        /**
+         * Return the first non-empty order meta value from a list of keys.
+         */
+        private function get_first_non_empty_meta_value(WC_Order $order, array $meta_keys): string
+        {
+            foreach ($meta_keys as $meta_key) {
+                $value = $order->get_meta($meta_key, true);
+
+                if (!empty($value)) {
+                    return $value;
+                }
+            }
+
+            return '';
         }
 
         /**
@@ -275,7 +274,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
                     $this->add_tracking_note(
                         $order,
                         sprintf(
-                            /* translators: 1: PayPal order id. 2: HTTP status code. 3: API error. */
                             __('Impossible de récupérer la commande PayPal %1$s (code %2$d). %3$s', 'ingenius-tracking-paypal'),
                             $paypal_order_id,
                             $order_details_response['code'],
@@ -326,7 +324,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
                         $this->add_tracking_note(
                             $order,
                             sprintf(
-                                /* translators: 1: capture id. 2: HTTP status. 3: API error. */
                                 __('Impossible de récupérer la capture PayPal %1$s (code %2$d). %3$s', 'ingenius-tracking-paypal'),
                                 $upsell_capture_id,
                                 $capture_details['code'],
@@ -638,7 +635,6 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
             $this->add_tracking_note(
                 $order,
                 sprintf(
-                    /* translators: 1: tracking number. 2: target label. 3: target value. 4: HTTP code. 5: API error. */
                     __('Erreur lors de l\'envoi du tracking "%1$s" (%2$s %3$s). Code %4$d. %5$s', 'ingenius-tracking-paypal'),
                     $tracking_number,
                     $target_label,
