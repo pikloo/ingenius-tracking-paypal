@@ -59,7 +59,7 @@ Oui, le plugin écoute `pmxi_saved_post` et déclenche l'envoi vers PayPal dès 
 
 == Changelog ==
 = 2.0.1.7 =
-* Fix mode de stockage credientals
+* Compatibilité PPCP multi-stockage + synchro HPOS
 
 
 = 2.0.1.6 =

@@ -86,33 +86,9 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin_Sync')) {
             global $wpdb;
 
             $meta_key = Ingenius_Tracking_Paypal_Order::TRACKING_SENT_META_NAME;
-            $payment_meta_key = '_payment_method';
             $payment_like = 'ppcp%';
-
-            $base_query = "FROM {$wpdb->postmeta} tracking
-                INNER JOIN {$wpdb->posts} posts ON posts.ID = tracking.post_id
-                INNER JOIN {$wpdb->postmeta} payment ON payment.post_id = posts.ID AND payment.meta_key = %s AND payment.meta_value LIKE %s
-                WHERE tracking.meta_key = %s AND posts.post_type = 'shop_order' AND posts.post_status NOT IN ('trash', 'auto-draft')";
-
-            $pending = (int) $wpdb->get_var(
-                $wpdb->prepare(
-                    "SELECT COUNT(DISTINCT tracking.post_id) {$base_query} AND tracking.meta_value = %s",
-                    $payment_meta_key,
-                    $payment_like,
-                    $meta_key,
-                    '0'
-                )
-            );
-
-            $sent = (int) $wpdb->get_var(
-                $wpdb->prepare(
-                    "SELECT COUNT(DISTINCT tracking.post_id) {$base_query} AND tracking.meta_value = %s",
-                    $payment_meta_key,
-                    $payment_like,
-                    $meta_key,
-                    '1'
-                )
-            );
+            $pending = $this->count_orders_by_tracking_state($meta_key, $payment_like, '0');
+            $sent = $this->count_orders_by_tracking_state($meta_key, $payment_like, '1');
 
             $total = $pending + $sent;
 
@@ -150,29 +126,111 @@ if (!class_exists('Ingenius_Tracking_Paypal_Admin_Sync')) {
          */
         private function get_orders_to_sync(int $limit): array
         {
-            $query = new WC_Order_Query(
-                array(
-                    'limit' => $limit,
-                    'return' => 'ids',
-                    'orderby' => 'date',
-                    'order' => 'DESC',
-                    'meta_query' => array(
-                        'relation' => 'AND',
-                        array(
-                            'key' => Ingenius_Tracking_Paypal_Order::TRACKING_SENT_META_NAME,
-                            'value' => '0',
-                            'compare' => '=',
-                        ),
-                        array(
-                            'key' => '_payment_method',
-                            'value' => 'ppcp',
-                            'compare' => 'LIKE',
-                        ),
-                    ),
+            global $wpdb;
+
+            $meta_key = Ingenius_Tracking_Paypal_Order::TRACKING_SENT_META_NAME;
+            $payment_like = 'ppcp%';
+
+            if ($this->uses_hpos()) {
+                $orders_table = $wpdb->prefix . 'wc_orders';
+                $orders_meta_table = $wpdb->prefix . 'wc_orders_meta';
+
+                $results = $wpdb->get_col(
+                    $wpdb->prepare(
+                        "SELECT DISTINCT tracking.order_id
+                        FROM {$orders_meta_table} tracking
+                        INNER JOIN {$orders_table} orders ON orders.id = tracking.order_id
+                        WHERE tracking.meta_key = %s
+                        AND tracking.meta_value = %s
+                        AND orders.type = 'shop_order'
+                        AND orders.status NOT IN ('trash', 'auto-draft', 'wc-trash', 'wc-auto-draft')
+                        AND orders.payment_method LIKE %s
+                        ORDER BY orders.date_created_gmt DESC
+                        LIMIT %d",
+                        $meta_key,
+                        '0',
+                        $payment_like,
+                        $limit
+                    )
+                );
+
+                return array_map('intval', $results);
+            }
+
+            $results = $wpdb->get_col(
+                $wpdb->prepare(
+                    "SELECT DISTINCT tracking.post_id
+                    FROM {$wpdb->postmeta} tracking
+                    INNER JOIN {$wpdb->posts} posts ON posts.ID = tracking.post_id
+                    INNER JOIN {$wpdb->postmeta} payment ON payment.post_id = posts.ID
+                    WHERE tracking.meta_key = %s
+                    AND tracking.meta_value = %s
+                    AND payment.meta_key = %s
+                    AND payment.meta_value LIKE %s
+                    AND posts.post_type = 'shop_order'
+                    AND posts.post_status NOT IN ('trash', 'auto-draft')
+                    ORDER BY posts.post_date_gmt DESC
+                    LIMIT %d",
+                    $meta_key,
+                    '0',
+                    '_payment_method',
+                    $payment_like,
+                    $limit
                 )
             );
 
-            return $query->get_orders();
+            return array_map('intval', $results);
+        }
+
+        private function count_orders_by_tracking_state(string $meta_key, string $payment_like, string $tracking_state): int
+        {
+            global $wpdb;
+
+            if ($this->uses_hpos()) {
+                $orders_table = $wpdb->prefix . 'wc_orders';
+                $orders_meta_table = $wpdb->prefix . 'wc_orders_meta';
+
+                return (int) $wpdb->get_var(
+                    $wpdb->prepare(
+                        "SELECT COUNT(DISTINCT tracking.order_id)
+                        FROM {$orders_meta_table} tracking
+                        INNER JOIN {$orders_table} orders ON orders.id = tracking.order_id
+                        WHERE tracking.meta_key = %s
+                        AND tracking.meta_value = %s
+                        AND orders.type = 'shop_order'
+                        AND orders.status NOT IN ('trash', 'auto-draft', 'wc-trash', 'wc-auto-draft')
+                        AND orders.payment_method LIKE %s",
+                        $meta_key,
+                        $tracking_state,
+                        $payment_like
+                    )
+                );
+            }
+
+            return (int) $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(DISTINCT tracking.post_id)
+                    FROM {$wpdb->postmeta} tracking
+                    INNER JOIN {$wpdb->posts} posts ON posts.ID = tracking.post_id
+                    INNER JOIN {$wpdb->postmeta} payment ON payment.post_id = posts.ID
+                    WHERE tracking.meta_key = %s
+                    AND tracking.meta_value = %s
+                    AND payment.meta_key = %s
+                    AND payment.meta_value LIKE %s
+                    AND posts.post_type = 'shop_order'
+                    AND posts.post_status NOT IN ('trash', 'auto-draft')",
+                    $meta_key,
+                    $tracking_state,
+                    '_payment_method',
+                    $payment_like
+                )
+            );
+        }
+
+        private function uses_hpos(): bool
+        {
+            return class_exists('\Automattic\WooCommerce\Utilities\OrderUtil')
+                && \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
         }
     }
 }
