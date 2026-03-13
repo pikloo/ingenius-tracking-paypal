@@ -65,10 +65,8 @@ if ( ! class_exists( 'PayPalConnection' ) ) {
 			$response  = curl_exec( $ch );
 			$http_code = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
 
-			curl_close( $ch );
-
 			if ( 200 !== $http_code ) {
-				throw new RuntimeException( sprintf( esc_html__( 'Failed to retrieve token: %$', 'ingenius-tracking-paypal' ), esc_html( $response ) ) );
+				throw new RuntimeException( sprintf( esc_html__( 'Failed to retrieve token: %s', 'ingenius-tracking-paypal' ), esc_html( $response ) ) );
 			}
 
 			$response_data = json_decode( $response );
@@ -159,7 +157,6 @@ if ( ! class_exists( 'PayPalConnection' ) ) {
 			$http_status_code = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
 			$request          = curl_getinfo( $ch );
 
-			curl_close( $ch );
 			$request = json_encode( $request );
 
 			return array(

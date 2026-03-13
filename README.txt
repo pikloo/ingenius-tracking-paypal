@@ -58,6 +58,8 @@ Oui, le plugin écoute `pmxi_saved_post` et déclenche l'envoi vers PayPal dès 
 2. Note automatique ajoutée sur la commande WooCommerce après envoi du suivi à PayPal.
 
 == Changelog ==
+= 2.0.1.6 =
+* Fix bug retour API lorsque http-code différent de 200 + fix deprecated curl close
 
 = 2.0.1.5 =
 * Ajout de la new meta genius_tracking_number
