@@ -357,11 +357,31 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
         private function initialize_paypal_connection(): PayPalConnection
         {
             $paypal_settings = get_option('woocommerce-ppcp-settings');
+            $paypal_common_data = get_option('woocommerce-ppcp-data-common');
+            $is_sandbox = ! empty($paypal_settings['sandbox_on']);
+
             $client_id = isset($paypal_settings['client_id_production']) ? $paypal_settings['client_id_production'] : '';
             $client_secret = isset($paypal_settings['client_secret_production']) ? $paypal_settings['client_secret_production'] : '';
 
+            if ($is_sandbox) {
+                $client_id = isset($paypal_settings['client_id_sandbox']) ? $paypal_settings['client_id_sandbox'] : $client_id;
+                $client_secret = isset($paypal_settings['client_secret_sandbox']) ? $paypal_settings['client_secret_sandbox'] : $client_secret;
+            }
+
+            if (empty($client_id) && is_array($paypal_common_data)) {
+                $client_id = isset($paypal_common_data['client_id']) ? $paypal_common_data['client_id'] : '';
+            }
+
+            if (empty($client_secret) && is_array($paypal_common_data)) {
+                $client_secret = isset($paypal_common_data['client_secret']) ? $paypal_common_data['client_secret'] : '';
+            }
+
+            if (is_array($paypal_common_data) && isset($paypal_common_data['is_sandbox'])) {
+                $is_sandbox = ! empty($paypal_common_data['is_sandbox']);
+            }
+
             require_once plugin_dir_path(__FILE__) . 'class-ingenius-tracking-paypal-api-connection.php';
-            return new PayPalConnection($client_id, $client_secret);
+            return new PayPalConnection($client_id, $client_secret, $is_sandbox);
         }
 
         /**

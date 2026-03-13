@@ -29,18 +29,20 @@ if ( ! class_exists( 'PayPalConnection' ) ) {
 		 */
 		private string $api_url;
 
-		protected const PAYPAL_LIVE_API_URL = 'https://api.paypal.com';
+		protected const PAYPAL_LIVE_API_URL = 'https://api-m.paypal.com';
+		protected const PAYPAL_SANDBOX_API_URL = 'https://api-m.sandbox.paypal.com';
 
 		/**
 		 * Initializes the PayPal connection by setting up the client ID, client secret, and the API URL to be used for requests.
 		 *
 		 * @param string $client_id The PayPal client ID used for authentication.
 		 * @param string $client_secret The PayPal client secret used for authentication.
+		 * @param bool   $is_sandbox Whether the sandbox API should be used.
 		 */
-		public function __construct( string $client_id, string $client_secret ) {
-			$this->client_id     = $client_id;
-			$this->client_secret = $client_secret;
-			$this->api_url       = self::PAYPAL_LIVE_API_URL;
+		public function __construct( string $client_id, string $client_secret, bool $is_sandbox = false ) {
+			$this->client_id     = trim( $client_id );
+			$this->client_secret = trim( $client_secret );
+			$this->api_url       = $is_sandbox ? self::PAYPAL_SANDBOX_API_URL : self::PAYPAL_LIVE_API_URL;
 		}
 
 		/**
