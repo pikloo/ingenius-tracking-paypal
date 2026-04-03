@@ -5,7 +5,7 @@ Tags: paypal, woocommerce, tracking, shipping, automation, aftership
 Requires at least: 5.8
 Tested up to: 6.4
 Requires PHP: 7.4
-Stable tag: 2.0.1.4
+Stable tag: 2.0.1.9
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,6 +58,9 @@ Oui, le plugin écoute `pmxi_saved_post` et déclenche l'envoi vers PayPal dès 
 2. Note automatique ajoutée sur la commande WooCommerce après envoi du suivi à PayPal.
 
 == Changelog ==
+= 2.0.1.9 =
+* Ignore les metas tracking stockees en tableau
+
 = 2.0.1.8 =
 * Compatibilité PPCP multi-stockage + synchro HPOS
 

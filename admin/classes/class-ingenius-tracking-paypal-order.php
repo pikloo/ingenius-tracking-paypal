@@ -207,8 +207,12 @@ if (!class_exists('Ingenius_Tracking_Paypal_Order')) {
             foreach ($meta_keys as $meta_key) {
                 $value = $order->get_meta($meta_key, true);
 
+                if (is_array($value)) {
+                    continue;
+                }
+
                 if (!empty($value)) {
-                    return $value;
+                    return (string) $value;
                 }
             }
 
