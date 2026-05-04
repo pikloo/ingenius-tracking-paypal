@@ -58,6 +58,9 @@ Oui, le plugin écoute `pmxi_saved_post` et déclenche l'envoi vers PayPal dès 
 2. Note automatique ajoutée sur la commande WooCommerce après envoi du suivi à PayPal.
 
 == Changelog ==
+= 2.0.1.10 =
+* Compatibilité meta settings woocommerce paypal payment
+
 = 2.0.1.9 =
 * Ignore les metas tracking stockees en tableau
 
